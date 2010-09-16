@@ -10,7 +10,7 @@ __plugin__ =  'flickr'
 __author__ = 'ruuk'
 __url__ = 'http://2ndmind.com'
 __date__ = '09-8-2010'
-__version__ = '0.5.0'
+__version__ = '0.9.1'
 __settings__ = xbmcaddon.Addon(id='plugin.image.flickr')
 __language__ = __settings__.getLocalizedString
 
