@@ -15,7 +15,8 @@ __settings__ = xbmcaddon.Addon(id='plugin.image.flickr')
 __language__ = __settings__.getLocalizedString
 
 IMAGES_PATH = xbmc.translatePath( os.path.join( os.getcwd(), 'resources', 'images' ) )
-CACHE_PATH = xbmc.translatePath( os.path.join( os.getcwd(), 'cache') )
+CACHE_PATH = xbmc.translatePath('special://profile/addon_data/plugin.image.flickr/cache/')
+
 if not os.path.exists(CACHE_PATH): os.mkdir(CACHE_PATH)
 
 class flickrPLUS(flickrapi.FlickrAPI):
