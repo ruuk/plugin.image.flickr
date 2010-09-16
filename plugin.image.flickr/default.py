@@ -302,16 +302,16 @@ class FlickrSession:
 		for p in places:
 			count = p.get('count','0')
 			#tn, x = urllib.urlretrieve("http://ojw.dev.openstreetmap.org/StaticMap/?lat="+p.get('lat','0')+"&lon="+p.get('lon','0')+"&z=2&w=256&h=256&show=1&fmt=png")
-			tn,x  = urllib.urlretrieve("http://maps.google.com/maps/api/staticmap?center="+p.get('lat','0')+","+p.get('lon','0')+"&zoom="+zoom+"&size=256x256&sensor=false&maptype=hybrid&format=jpg",os.path.join(CACHE_PATH,str(idx)+'.jpg'))
+			#tn,x  = urllib.urlretrieve("http://maps.google.com/maps/api/staticmap?center="+p.get('lat','0')+","+p.get('lon','0')+"&zoom="+zoom+"&size=256x256&sensor=false&maptype=hybrid&format=jpg",os.path.join(CACHE_PATH,str(idx)+'.jpg'))
 			#BteTjhnV34E7M.r_gjDLCI33rmG0FL7TFPCMF7LHEleA_iKm6S_rEjpCmns-
 			#tn = "http://maps.google.com/maps/api/staticmap?center=40.714728,-73.998672&zoom=12&size=256x256&sensor=false&maptype=hybrid"
 			#xml = urllib.urlopen("http://local.yahooapis.com/MapsService/V1/mapImage?appid=BteTjhnV34E7M.r_gjDLCI33rmG0FL7TFPCMF7LHEleA_iKm6S_rEjpCmns-&latitude="+p.get('lat','0')+"&longitude="+p.get('lon','0')+"&image_height=256&image_width=256&zoom=10").read()
 			#tn = xml.split('</Result>')[0].split('">')[1]
 			#tn = urllib.unquote_plus(tn)
-			print "TEST: "+tn
+			#print "TEST: "+tn
 			#urllib.urlretrieve(tn,'test.png')
 			#tn="http://gws.maps.yahoo.com/mapimage?MAPDATA=B.KuOud6wXXC3vi5X0zQEdMkX1ubUTsq.MWWDhhCYyi9fXv5J1oRq1gn7GILfmqt93QGvUGHqQx0AOGf7YQW_P_iYvB8s_t1GQXG5dxj9TW76FE-&mvt=m&cltype=onnetwork&.intl=us&appid=BteTjhnV34E7M.r_gjDLCI33rmG0FL7TFPCMF7LHEleA_iKm6S_rEjpCmns-&oper=&_proxy=ydn,xml"
-			self.addDir(p.get('place','')+' ('+count+')',p.get('woeid'),1000 + pid,tn,tot=len(places))
+			self.addDir(p.get('place','')+' ('+count+')',p.get('woeid'),1000 + pid,'',tot=len(places))
 			idx+=1
 		
 	def FAVORITES(self,page,userid=None):
