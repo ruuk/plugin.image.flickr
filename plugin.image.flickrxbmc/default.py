@@ -259,6 +259,7 @@ class FlickrSession:
 		self.addDir(__language__(30306),'contacts',7,os.path.join(IMAGES_PATH,'contacts.png'))
 		self.addDir(__language__(30308),'@@search@@',9,os.path.join(IMAGES_PATH,'search_photostream.png'))
 		self.addDir(__language__(30309),'@@search@@',10,os.path.join(IMAGES_PATH,'search_flickr.png'))
+		self.addDir(__language__(30310),'interesting',11,os.path.join(IMAGES_PATH,'interesting.png'))
 		
 	def PHOTOSTREAM(self,page,mode=1,userid='me'):
 		self.addPhotos(self.flickr.photos_search,mode,url=userid,page=page,user_id=userid)
@@ -327,6 +328,9 @@ class FlickrSession:
 			if (keyboard.isConfirmed()):
 				tags = keyboard.getText()
 		self.addPhotos(self.flickr.photos_search,mode,url=tags,page=page,tags=tags,user_id=userid)
+		
+	def INTERESTING(self,page):
+		self.addPhotos(self.flickr.interestingness_getList,11,page=page)
 		
 	def SET(self,psid,page):
 		self.addPhotos(self.flickr.photosets_getPhotos,103,url=psid,page=page,photoset_id=psid)
@@ -454,6 +458,8 @@ try:
 		fsession.SEARCH_TAGS(url,page,mode=9,userid='me')
 	elif mode==10:
 		fsession.SEARCH_TAGS(url,page,mode=10)
+	elif mode==11:
+		fsession.INTERESTING(page)
 	elif mode==103:
 		fsession.SET(url,page)
 	elif mode==104:
