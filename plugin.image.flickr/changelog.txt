@@ -2,7 +2,12 @@ flickrXBMC Changelog
 
 Current Version : 0.9.1
 
+** 0.9.2 ***
 
+German language translation - thanks to Max Auer
+Spanish language translation
+Maps for Place thumbnails
+Added 'Show Map' option on photo context menu to display a map with marker
 
 ** 0.9.1 ***
 
