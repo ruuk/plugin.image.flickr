@@ -32,4 +32,18 @@
     
     <!-- General Strings -->
     <string id="30500">En Mostrar Todas Las</string>
+    <string id="30501">Introduzca etiquetas de búsqueda</string>
+    <string id="30502">Tiempo de espera de HTTP</string>
+    <string id="30503">Tiempo de espera de conexión</string>
+    <string id="30504">Inténtalo de nuevo</string>
+    <string id="30505">Autorizar flickrXBMC</string>
+    <string id="30506">Ir a la</string>
+    <string id="30507">siga las instrucciones, y luego haga clic en Aceptar</string>
+    <string id="30508">Introduzca la dirección de correo electrónico:</string>
+    <string id="30509">Introduzca el código:</string>
+    <string id="30510">Ver Mapa</string>
+    <string id="30511">Anterior</string>
+    <string id="30512">Siguiente</string>
+    <string id="30513">Última</string>
+    <string id="30514">fotos</string>
 </strings>

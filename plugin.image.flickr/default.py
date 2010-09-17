@@ -10,7 +10,7 @@ __plugin__ =  'flickr'
 __author__ = 'ruuk'
 __url__ = 'http://code.google.com/p/flickrxbmc/'
 __date__ = '09-17-2010'
-__version__ = '0.9.2'
+__version__ = '0.9.3'
 __settings__ = xbmcaddon.Addon(id='plugin.image.flickr')
 __language__ = __settings__.getLocalizedString
 
@@ -74,12 +74,12 @@ class FlickrSession:
 		
 	def doTokenDialog(self,frob,perms):
 		dialog = xbmcgui.Dialog()
-		ok = dialog.ok('Authorize flickrXBMC','Go to: 2ndmind.com/flickrXBMC', 'follow the instructions, then click OK')
-		keyboard = xbmc.Keyboard('','Enter the email address here:')
+		ok = dialog.ok(__language__(30505),__language__(30506) + ': 2ndmind.com/flickrXBMC', __language__(30507))
+		keyboard = xbmc.Keyboard('',__language__(30508))
 		keyboard.doModal()
 		if (keyboard.isConfirmed()):
 			email = keyboard.getText()
-		keyboard = xbmc.Keyboard('','Enter the code:')
+		keyboard = xbmc.Keyboard('',__language__(30509))
 		keyboard.doModal()
 		if (keyboard.isConfirmed()):
 			code = keyboard.getText()
@@ -212,8 +212,8 @@ class FlickrSession:
 		
 		#Add Previous Header if necessary
 		if page > 1:
-			if page == 2: self.addDir('<- Previous ' + str(self.max_per_page) + ' photos',url,mode,os.path.join(IMAGES_PATH,'previous.png'),page='-1',userid=kwargs.get('userid',''))
-			else: self.addDir('<- Previous ' + str(self.max_per_page) + ' photos',url,mode,os.path.join(IMAGES_PATH,'previous.png'),page=str(page-1),userid=kwargs.get('userid',''))
+			if page == 2: self.addDir('<- '+__language__(30511)+' ' + str(self.max_per_page) + ' '+__language__(30514),url,mode,os.path.join(IMAGES_PATH,'previous.png'),page='-1',userid=kwargs.get('userid',''))
+			else: self.addDir('<- Previous ' + str(self.max_per_page) + ' '+__language__(30514),url,mode,os.path.join(IMAGES_PATH,'previous.png'),page=str(page-1),userid=kwargs.get('userid',''))
 		info_list = []
 		extras = self.SIZE_KEYS[self.defaultThumbSize] + ',' + self.SIZE_KEYS[self.defaultDisplaySize]
 		if mapOption: extras += ',geo'
@@ -234,11 +234,11 @@ class FlickrSession:
 		if ct >= self.max_per_page:
 			next = '('+str(page*self.max_per_page)+'/'+str(self.flickr.TOTAL)+') '
 			if page + 1 == self.flickr.TOTAL_PAGES:
-				if self.flickr.TOTAL_ON_LAST_PAGE: next += 'Last ' + str(self.flickr.TOTAL_ON_LAST_PAGE)
-				else: next += 'Last ' + str(self.max_per_page)
+				if self.flickr.TOTAL_ON_LAST_PAGE: next += __language__(30513)+' ' + str(self.flickr.TOTAL_ON_LAST_PAGE)
+				else: next += __language__(30513)+' ' + str(self.max_per_page)
 			else: 
-				next += 'Next ' + str(self.max_per_page)
-			if page < self.flickr.TOTAL_PAGES: self.addDir(next + ' photos ->',url,mode,os.path.join(IMAGES_PATH,'next.png'),page=str(page+1),userid=kwargs.get('userid',''))
+				next += __language__(30512)+' ' + str(self.max_per_page)
+			if page < self.flickr.TOTAL_PAGES: self.addDir(next + ' '+__language__(30514)+' ->',url,mode,os.path.join(IMAGES_PATH,'next.png'),page=str(page+1),userid=kwargs.get('userid',''))
 		
 	def addPhoto(self,title,pid,thumb,display,mapOption=False,lat='',lon=''):
 		if not (thumb and display):
@@ -255,7 +255,7 @@ class FlickrSession:
 		contextMenu = None
 		if mapOption:
 			if not lat+lon == '00':
-				contextMenu = [('Show Map','XBMC.RunScript(special://home/addons/plugin.image.flickr/default.py,map,'+lat+','+lon+')')]
+				contextMenu = [(__language__(30510),'XBMC.RunScript(special://home/addons/plugin.image.flickr/default.py,map,'+lat+','+lon+')')]
 		self.addLink(title,display,thumb,tot=self.flickr.TOTAL_ON_PAGE,contextMenu=contextMenu)
 		
 	def CATEGORIES(self):
@@ -298,7 +298,6 @@ class FlickrSession:
 			self.addDir(t,t,105,'',tot=len(tags),userid=userid)
 			
 	def PLACES(self,pid,woeid=None,name='',zoom='2'):
-		clearDirFiles(CACHE_PATH)
 		places = self.getPlacesInfoList(pid,woeid=woeid)
 		
 		#If there are no places in this place id level, show all the photos
@@ -337,7 +336,7 @@ class FlickrSession:
 			
 	def SEARCH_TAGS(self,tags,page,mode=9,userid=None):
 		if tags == '@@search@@' or tags == userid:
-			keyboard = xbmc.Keyboard('','Enter search tags:')
+			keyboard = xbmc.Keyboard('',__language__(30501))
 			keyboard.doModal()
 			if (keyboard.isConfirmed()):
 				tags = keyboard.getText()
@@ -474,6 +473,7 @@ def doPlugin():
 
 	update_dir = False
 	success = True
+	cache = True
 
 	try:
 		fsession = FlickrSession()
@@ -483,6 +483,7 @@ def doPlugin():
 		page = abs(page)
 
 		if mode==None or url==None or len(url)<1:
+			clearDirFiles(CACHE_PATH)
 			fsession.CATEGORIES()
 		elif mode==1:
 			fsession.PHOTOSTREAM(page)
@@ -499,6 +500,7 @@ def doPlugin():
 		elif mode==7:
 			fsession.CONTACTS()
 		elif mode==8:
+			clearDirFiles(CACHE_PATH)
 			fsession.PLACES(12)
 		elif mode==9:
 			fsession.SEARCH_TAGS(url,page,mode=9,userid='me')
@@ -541,7 +543,7 @@ def doPlugin():
 	except HTTPError,e:
 		if(e.reason[1] == 504):
 			dialog = xbmcgui.Dialog()
-			ok = dialog.ok('HTTP Timeout', 'Try again.')
+			ok = dialog.ok(__language__(30502), __language__(30504))
 			success = False
 		else:
 			raise
@@ -549,12 +551,12 @@ def doPlugin():
 		print e.reason
 		if(e.reason[0] == 110):
 			dialog = xbmcgui.Dialog()
-			ok = dialog.ok('Connection Timeout', 'Try again.')
+			ok = dialog.ok(__language__(30503), __language__(30504))
 			success = False
 		else:
 			raise
 		
-	xbmcplugin.endOfDirectory(int(sys.argv[1]),succeeded=success,updateListing=update_dir)
+	xbmcplugin.endOfDirectory(int(sys.argv[1]),succeeded=success,updateListing=update_dir,cacheToDisc=cache)
 
 if sys.argv[1] == 'map':
 	doMap()
