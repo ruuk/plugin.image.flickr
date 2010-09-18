@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!-- NOTE The string @REPLACE@ must not be modified in a translation -->
 <strings>
     <string id="30001">Flickr User Name</string>
     <string id="30002">Default Thumb Size</string>
@@ -31,19 +32,18 @@
     <string id="30310">Interesting Today</string>
     
     <!-- General Strings -->
-    <string id="30500">Show All In</string>
+    <string id="30500">Show All In @REPLACE@</string><!--example: Show All In Canada -->
     <string id="30501">Enter search tags</string>
     <string id="30502">HTTP Timeout</string>
     <string id="30503">Connection Timeout</string>
     <string id="30504">Try again</string>
     <string id="30505">Authorize flickrXBMC</string>
-    <string id="30506">Go to</string>
+    <string id="30506">Go to @REPLACE@</string><!--example: Go to http://google.com -->
     <string id="30507">follow the instructions, then click OK</string>
     <string id="30508">Enter the email address here:</string>
     <string id="30509">Enter the code:</string>
     <string id="30510">Show Map</string>
-    <string id="30511">Previous</string>
-    <string id="30512">Next</string>
-    <string id="30513">Last</string>
-    <string id="30514">photos</string>
+    <string id="30511">Previous @REPLACE@ photos</string><!--example: Previous 50 photos -->
+    <string id="30512">Next @REPLACE@ photos</string><!--example: Next 50 photos -->
+    <string id="30513">Last @REPLACE@ photos</string><!--example: Last 50 photos -->
 </strings>

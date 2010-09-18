@@ -74,7 +74,7 @@ class FlickrSession:
 		
 	def doTokenDialog(self,frob,perms):
 		dialog = xbmcgui.Dialog()
-		ok = dialog.ok(__language__(30505),__language__(30506) + ': 2ndmind.com/flickrXBMC', __language__(30507))
+		ok = dialog.ok(__language__(30505),__language__(30506).replace('@REPLACE@',': 2ndmind.com/flickrXBMC'), __language__(30507))
 		keyboard = xbmc.Keyboard('',__language__(30508))
 		keyboard.doModal()
 		if (keyboard.isConfirmed()):
@@ -212,8 +212,10 @@ class FlickrSession:
 		
 		#Add Previous Header if necessary
 		if page > 1:
-			if page == 2: self.addDir('<- '+__language__(30511)+' ' + str(self.max_per_page) + ' '+__language__(30514),url,mode,os.path.join(IMAGES_PATH,'previous.png'),page='-1',userid=kwargs.get('userid',''))
-			else: self.addDir('<- Previous ' + str(self.max_per_page) + ' '+__language__(30514),url,mode,os.path.join(IMAGES_PATH,'previous.png'),page=str(page-1),userid=kwargs.get('userid',''))
+			previous = '<- '+__language__(30511)
+			pg = (page==2) and '-1' or  str(page-1) #if previous page is one, set to -1 to differentiate from initial showing
+			self.addDir(previous.replace('@REPLACE@',str(self.max_per_page)),url,mode,os.path.join(IMAGES_PATH,'previous.png'),page = pg,userid=kwargs.get('userid',''))
+			
 		info_list = []
 		extras = self.SIZE_KEYS[self.defaultThumbSize] + ',' + self.SIZE_KEYS[self.defaultDisplaySize]
 		if mapOption: extras += ',geo'
@@ -233,12 +235,15 @@ class FlickrSession:
 		#print "PAGES: " + str(page) + " " + str(self.flickr.TOTAL_PAGES) + " " + self.flickr.TOTAL_ON_LAST_PAGE
 		if ct >= self.max_per_page:
 			next = '('+str(page*self.max_per_page)+'/'+str(self.flickr.TOTAL)+') '
+			replace = ''
 			if page + 1 == self.flickr.TOTAL_PAGES:
-				if self.flickr.TOTAL_ON_LAST_PAGE: next += __language__(30513)+' ' + str(self.flickr.TOTAL_ON_LAST_PAGE)
-				else: next += __language__(30513)+' ' + str(self.max_per_page)
+				next += __language__(30513)
+				if self.flickr.TOTAL_ON_LAST_PAGE: replace = str(self.flickr.TOTAL_ON_LAST_PAGE)
+				else: replace = str(self.max_per_page)
 			else: 
-				next += __language__(30512)+' ' + str(self.max_per_page)
-			if page < self.flickr.TOTAL_PAGES: self.addDir(next + ' '+__language__(30514)+' ->',url,mode,os.path.join(IMAGES_PATH,'next.png'),page=str(page+1),userid=kwargs.get('userid',''))
+				next += __language__(30512)
+				replace = str(self.max_per_page)
+			if page < self.flickr.TOTAL_PAGES: self.addDir(next.replace('@REPLACE@',replace)+' ->',url,mode,os.path.join(IMAGES_PATH,'next.png'),page=str(page+1),userid=kwargs.get('userid',''))
 		
 	def addPhoto(self,title,pid,thumb,display,mapOption=False,lat='',lon=''):
 		if not (thumb and display):
@@ -305,7 +310,7 @@ class FlickrSession:
 			self.PLACE(woeid,1)
 			return
 			
-		if woeid and len(places) > 1: self.addDir(__language__(30500)+' '+name,woeid,1022,'')
+		if woeid and len(places) > 1: self.addDir(__language__(30500).replace('@REPLACE@',name),woeid,1022,'')
 		idx=0
 		for p in places:
 			count = p.get('count','0')
