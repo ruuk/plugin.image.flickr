@@ -361,14 +361,14 @@ class FlickrSession:
 		self.addPhotos(self.flickr.photos_search,105,url=tag,page=page,tags=tag,user_id=userid)
 		
 	def CONTACT(self,cid,name):
-		self.addDir(name+"'s "+ __language__(30300),cid,701,os.path.join(IMAGES_PATH,'photostream.png'))
-		self.addDir(name+"'s "+ __language__(30301),cid,702,os.path.join(IMAGES_PATH,'collections.png'))
-		self.addDir(name+"'s "+ __language__(30302),cid,703,os.path.join(IMAGES_PATH,'sets.png'))
-		self.addDir(name+"'s "+ __language__(30303),cid,704,os.path.join(IMAGES_PATH,'galleries.png'))
-		self.addDir(name+"'s "+ __language__(30304),cid,705,os.path.join(IMAGES_PATH,'tags.png'))
-		self.addDir(name+"'s "+ __language__(30305),cid,706,os.path.join(IMAGES_PATH,'favorites.png'))
-		self.addDir(name+"'s "+ __language__(30306),cid,707,os.path.join(IMAGES_PATH,'contacts.png'))
-		self.addDir(__language__(30308),cid,709,os.path.join(IMAGES_PATH,'search_photostream.png'))
+		self.addDir(__language__(30514).replace('@NAMEREPLACE@',name).replace('@REPLACE@',__language__(30300)),cid,701,os.path.join(IMAGES_PATH,'photostream.png'))
+		self.addDir(__language__(30515).replace('@NAMEREPLACE@',name).replace('@REPLACE@',__language__(30301)),cid,702,os.path.join(IMAGES_PATH,'collections.png'))
+		self.addDir(__language__(30515).replace('@NAMEREPLACE@',name).replace('@REPLACE@',__language__(30302)),cid,703,os.path.join(IMAGES_PATH,'sets.png'))
+		self.addDir(__language__(30515).replace('@NAMEREPLACE@',name).replace('@REPLACE@',__language__(30303)),cid,704,os.path.join(IMAGES_PATH,'galleries.png'))
+		self.addDir(__language__(30515).replace('@NAMEREPLACE@',name).replace('@REPLACE@',__language__(30304)),cid,705,os.path.join(IMAGES_PATH,'tags.png'))
+		self.addDir(__language__(30515).replace('@NAMEREPLACE@',name).replace('@REPLACE@',__language__(30305)),cid,706,os.path.join(IMAGES_PATH,'favorites.png'))
+		self.addDir(__language__(30515).replace('@NAMEREPLACE@',name).replace('@REPLACE@',__language__(30306)),cid,707,os.path.join(IMAGES_PATH,'contacts.png'))
+		self.addDir(__language__(30516).replace('@NAMEREPLACE@',name),cid,709,os.path.join(IMAGES_PATH,'search_photostream.png'))
 		
 	def PLACE(self,woeid,page):
 		self.addPhotos(self.flickr.photos_search,1022,url=woeid,page=page,woe_id=woeid,user_id='me',mapOption=True)

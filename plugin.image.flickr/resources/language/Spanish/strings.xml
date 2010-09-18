@@ -46,4 +46,7 @@
     <string id="30511">Anterior @REPLACE@ fotos</string>
     <string id="30512">Siguiente @REPLACE@ fotos</string>
     <string id="30513">Last @REPLACE@ fotos</string>
+    <string id="30514">@REPLACE@ @NAMEREPLACE@</string><!--(Singular possesive) example: John's Photostream -->
+    <string id="30515">@REPLACE@ de @NAMEREPLACE@</string><!--(Plural posessive) example: John's Sets -->
+    <string id="30516">@NAMEREPLACE@ Galería De Búsqueda</string><!--Search John's Photostream -->
 </strings>
