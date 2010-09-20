@@ -3,7 +3,7 @@
 import flickrapi
 import urllib
 import xbmc, xbmcgui, xbmcplugin, xbmcaddon
-import sys, os
+import sys, os, time
 from urllib2 import HTTPError, URLError
 
 __plugin__ =  'flickr'
@@ -41,6 +41,63 @@ class flickrPLUS(flickrapi.FlickrAPI):
 			for photo in photos:
 				yield photo 
 
+class Maps:
+	def __init__(self):
+		self.map_source = ['google','yahoo','osm'][int(__settings__.getSetting('default_map_source'))]
+		if self.map_source == 'yahoo':
+			import elementtree.ElementTree as et
+			self.ET = et
+		self.zoom =  {	'country':int(__settings__.getSetting('country_zoom')),
+						'region':int(__settings__.getSetting('region_zoom')),
+						'locality':int(__settings__.getSetting('locality_zoom')),
+						'neighborhood':int(__settings__.getSetting('neighborhood_zoom')),
+						'photo':int(__settings__.getSetting('photo_zoom'))}
+		self.default_map_type = ['hybrid','satellite','terrain','roadmap'][int(__settings__.getSetting('default_map_type'))]
+		
+	def getMap(self,lat,lon,zoom,width=256,height=256,marker=False):
+		#640x36
+		source = self.map_source
+		lat = str(lat)
+		lon = str(lon)
+		zoom = str(self.zoom[zoom])
+		#create map file name from lat,lon,zoom and time. Take that thumbnail cache!!! :)
+		fnamebase = (lat+lon+zoom+str(int(time.time()))).replace('.','')
+		ipath = os.path.join(CACHE_PATH,fnamebase+'.jpg')
+		mark = ''
+		if marker:
+			if source == 'osm': 
+				mark = '&mlat0=' + lat + '&mlon0=' + lon + '&mico0=0'
+			elif source == 'yahoo':
+				mark = ''
+			else:
+				mark = '&markers=color:blue|' + lat + ',' + lon
+		if source == 'osm':
+			url = "http://ojw.dev.openstreetmap.org/StaticMap/?lat="+lat+"&lon="+lon+"&z="+zoom+"&w="+str(width)+"&h="+str(height)+"&show=1&fmt=jpg"
+		elif source == 'yahoo':
+			#zoom = str((int((21 - int(zoom)) * (12/21.0)) or 1) + 1)
+			zoom = self.translateZoomToYahoo(zoom)
+			xml = urllib.urlopen("http://local.yahooapis.com/MapsService/V1/mapImage?appid=BteTjhnV34E7M.r_gjDLCI33rmG0FL7TFPCMF7LHEleA_iKm6S_rEjpCmns-&latitude="+lat+"&longitude="+lon+"&image_height="+str(height)+"&image_width="+str(width)+"&zoom="+zoom).read()
+			url = self.ET.fromstring(xml).text.strip()
+			url = urllib.unquote_plus(url)
+			if 'error' in url: return ''
+		else:
+			url = "http://maps.google.com/maps/api/staticmap?center="+lat+","+lon+"&zoom="+zoom+"&size="+str(width)+"x"+str(height)+"&sensor=false&maptype="+self.default_map_type+"&format=jpg"
+
+		fname,ignore  = urllib.urlretrieve(url + mark,ipath)
+		return fname
+
+	def translateZoomToYahoo(self,zoom):
+		#Yahoo and your infernal static maps 12 level zoom!
+		#This matches as closely as possible the defaults for google and osm while allowing all 12 values
+		zoom = 16 - int(zoom)
+		if zoom < 1: zoom = 1
+		if zoom >12: zoom = 12
+		return str(zoom)
+		
+	def doMap(self):
+		clearDirFiles(CACHE_PATH)
+		image = self.getMap(sys.argv[2],sys.argv[3],'photo',width=640,height=360,marker=True)
+		xbmc.executebuiltin('SlideShow('+CACHE_PATH+')')
 	
 class FlickrSession:
 	API_KEY = '0a802e6334304794769996c84c57d187'
@@ -60,6 +117,8 @@ class FlickrSession:
 		self.username = username
 		self.user_id = None
 		self.loadSettings()
+		self.maps = None
+		if __settings__.getSetting('enable_maps') == 'true': self.maps = Maps()
 		
 	def loadSettings(self):
 		self.username = __settings__.getSetting('flickr_username')
@@ -314,17 +373,8 @@ class FlickrSession:
 		idx=0
 		for p in places:
 			count = p.get('count','0')
-			#tn, x = urllib.urlretrieve("http://ojw.dev.openstreetmap.org/StaticMap/?lat="+p.get('lat','0')+"&lon="+p.get('lon','0')+"&z=2&w=256&h=256&show=1&fmt=png")
-			#tn,x  = urllib.urlretrieve("http://maps.google.com/maps/api/staticmap?center="+p.get('lat','0')+","+p.get('lon','0')+"&zoom="+zoom+"&size=256x256&sensor=false&maptype=hybrid&format=jpg",ipath)
-			#BteTjhnV34E7M.r_gjDLCI33rmG0FL7TFPCMF7LHEleA_iKm6S_rEjpCmns-
-			#tn = "http://maps.google.com/maps/api/staticmap?center=40.714728,-73.998672&zoom=12&size=256x256&sensor=false&maptype=hybrid"
-			#xml = urllib.urlopen("http://local.yahooapis.com/MapsService/V1/mapImage?appid=BteTjhnV34E7M.r_gjDLCI33rmG0FL7TFPCMF7LHEleA_iKm6S_rEjpCmns-&latitude="+p.get('lat','0')+"&longitude="+p.get('lon','0')+"&image_height=256&image_width=256&zoom=10").read()
-			#tn = xml.split('</Result>')[0].split('">')[1]
-			#tn = urllib.unquote_plus(tn)
-			#print "TEST: "+tn
-			#urllib.urlretrieve(tn,'test.png')
-			#tn="http://gws.maps.yahoo.com/mapimage?MAPDATA=B.KuOud6wXXC3vi5X0zQEdMkX1ubUTsq.MWWDhhCYyi9fXv5J1oRq1gn7GILfmqt93QGvUGHqQx0AOGf7YQW_P_iYvB8s_t1GQXG5dxj9TW76FE-&mvt=m&cltype=onnetwork&.intl=us&appid=BteTjhnV34E7M.r_gjDLCI33rmG0FL7TFPCMF7LHEleA_iKm6S_rEjpCmns-&oper=&_proxy=ydn,xml"
-			tn = getMap(p.get('lat','0'),p.get('lon','0'),zoom)
+			tn = ''
+			if self.maps: tn = self.maps.getMap(p.get('lat','0'),p.get('lon','0'),zoom)
 			self.addDir(p.get('place','')+' ('+count+')',p.get('woeid'),1000 + pid,tn,tot=len(places))
 			idx+=1
 		
@@ -335,9 +385,7 @@ class FlickrSession:
 		contacts = self.getContactsInfoList(userid=userid)
 		total = len(contacts)
 		for c in contacts:
-			self.addDir(c['username'],c['id'],107,c['tn'],tot=total
-			
-			)
+			self.addDir(c['username'],c['id'],107,c['tn'],tot=total)
 			
 	def SEARCH_TAGS(self,tags,page,mode=9,userid=None):
 		if tags == '@@search@@' or tags == userid:
@@ -397,31 +445,14 @@ class ImageShower(xbmcgui.Window):
 		self.addControl(xbmcgui.ControlImage(0,0,test.getWidth(),test.getHeight(), image, aspectRatio=2))
 		
 	def onAction(self,action):
-		if action == 10 or action == 9: self.close()
-
-def getMap(lat,lon,zoom,width=256,height=256,marker=False):
-	#640x360
-	lat = str(lat)
-	lon = str(lon)
-	zoom = str(zoom)
-	ipath = os.path.join(CACHE_PATH,lat+lon+zoom+'.jpg')
-	mark = ''
-	if marker: mark = '&markers=color:blue|' + lat + ',' + lon
-	fname,ignore  = urllib.urlretrieve("http://maps.google.com/maps/api/staticmap?center="+lat+","+lon+"&zoom="+zoom+"&size="+str(width)+"x"+str(height)+"&sensor=false&maptype=hybrid&format=jpg" + mark,ipath)
-	return fname
-		
+		if action == 10 or action == 9: self.close()		
 
 def clearDirFiles(filepath):
 	if not os.path.exists(filepath): return
 	for f in os.listdir(filepath):
 		f = os.path.join(filepath,f)
 		if os.path.isfile(f): os.remove(f)
-
-def doMap():
-	clearDirFiles(CACHE_PATH)
-	image = getMap(sys.argv[2],sys.argv[3],15,width=640,height=360,marker=True)
-	xbmc.executebuiltin('SlideShow('+CACHE_PATH+')')
-	
+		
 ## XBMC Plugin stuff starts here --------------------------------------------------------            
 def get_params():
 	param=[]
@@ -506,7 +537,7 @@ def doPlugin():
 			fsession.CONTACTS()
 		elif mode==8:
 			clearDirFiles(CACHE_PATH)
-			fsession.PLACES(12)
+			fsession.PLACES(12,zoom='country')
 		elif mode==9:
 			fsession.SEARCH_TAGS(url,page,mode=9,userid='me')
 		elif mode==10:
@@ -540,11 +571,11 @@ def doPlugin():
 		elif mode==1022:
 			fsession.PLACE(url,page)
 		elif mode==1007:
-			fsession.PLACES(22,woeid=url,name=name,zoom='13')
+			fsession.PLACES(22,woeid=url,name=name,zoom='neighborhood')
 		elif mode==1008:
-			fsession.PLACES(7,woeid=url,name=name,zoom='9')
+			fsession.PLACES(7,woeid=url,name=name,zoom='locality')
 		elif mode==1012:
-			fsession.PLACES(8,woeid=url,name=name,zoom='4')
+			fsession.PLACES(8,woeid=url,name=name,zoom='region')
 	except HTTPError,e:
 		if(e.reason[1] == 504):
 			dialog = xbmcgui.Dialog()
@@ -564,6 +595,6 @@ def doPlugin():
 	xbmcplugin.endOfDirectory(int(sys.argv[1]),succeeded=success,updateListing=update_dir,cacheToDisc=cache)
 
 if sys.argv[1] == 'map':
-	doMap()
+	Maps().doMap()
 else:
 	doPlugin()

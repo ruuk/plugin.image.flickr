@@ -5,6 +5,14 @@
     <string id="30002">DStandard Thumbgröße</string>
     <string id="30003">Standard Anzeigegröße</string>
     <string id="30004">Maximale Anzahl an Fotos pro Seite</string>
+    <string id="30005">Default Map Source</string>
+    <string id="30006">Country Zoom</string>
+    <string id="30007">Region Zoom</string>
+    <string id="30008">Locality Zoom</string>
+    <string id="30009">Neighborhood Zoom</string>
+    <string id="30010">Photo Zoom</string>
+    <string id="30011">Enable Maps Thumbnails</string>
+    <string id="30012">Default Map Type</string>
     
     <!-- Image Sizes-->
     <string id="30100">Quadrat</string>
@@ -17,6 +25,7 @@
     
     <!-- Settings Categories-->
     <string id="30200">Display</string>
+    <string id="30201">Maps</string>
     
     <!-- 'Your' Categories-->
     <string id="30300">Fotostream</string>
