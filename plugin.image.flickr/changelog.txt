@@ -2,6 +2,11 @@ flickrXBMC Changelog
 
 Current Version : 0.9.3
 
+** 0.9.4 ***
+
+improved settings interface
+fixed bug with authorization (works with all versions)
+
 ** 0.9.3 ***
 
 Added strings to language files
