@@ -1,6 +1,15 @@
 flickrXBMC Changelog
 
-Current Version : 0.9.5
+Current Version : 0.9.7
+
+** 0.9.7 ***
+
+Changed default map to google
+Added Dutch language - thanks to Michel de Bokx
+
+** 0.9.6 ***
+
+Improved directory load cancelling
 
 ** 0.9.5 ***
 

@@ -6,11 +6,11 @@ import xbmc, xbmcgui, xbmcplugin, xbmcaddon
 import sys, os, time
 from urllib2 import HTTPError, URLError
 
-__plugin__ =  'flickr'
+__plugin__ = 'flickr'
 __author__ = 'ruuk'
 __url__ = 'http://code.google.com/p/flickrxbmc/'
 __date__ = '09-25-2010'
-__version__ = '0.9.5'
+__version__ = '0.9.7'
 __settings__ = xbmcaddon.Addon(id='plugin.image.flickr')
 __language__ = __settings__.getLocalizedString
 
@@ -429,7 +429,6 @@ class FlickrSession:
 		liz.setInfo( type="image", infoLabels={ "Title": name } )
 		if contextMenu: liz.addContextMenuItems(contextMenu)
 		return xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=url,listitem=liz,isFolder=False,totalItems=tot)
-
 
 	def addDir(self,name,url,mode,iconimage,page=1,tot=0,userid=''):
 		if userid: userid = "&userid="+urllib.quote_plus(userid)
