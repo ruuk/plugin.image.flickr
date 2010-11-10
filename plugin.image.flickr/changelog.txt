@@ -1,6 +1,10 @@
 flickrXBMC Changelog
 
-Current Version : 0.9.7
+Current Version : 0.9.8
+
+** 0.9.8 ***
+
+Added Language Translation: Chinese (Traditional) - thanks to Ramius
 
 ** 0.9.7 ***
 
