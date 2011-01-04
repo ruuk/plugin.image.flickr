@@ -2,7 +2,7 @@
 
 import flickrapi
 import urllib
-import xbmc, xbmcgui, xbmcplugin, xbmcaddon
+import xbmc, xbmcgui, xbmcplugin, xbmcaddon #@UnresolvedImport
 import sys, os, time
 from urllib2 import HTTPError, URLError
 
@@ -27,7 +27,6 @@ class flickrPLUS(flickrapi.FlickrAPI):
 			page = int(photoset.attrib.get('page','1'))
 			pages = int(photoset.attrib.get('pages','1'))
 			perpage = int(photoset.attrib.get('perpage','1'))
-			perpage = int(photoset.attrib.get('perpage','1'))
 			total = int(photoset.attrib.get('total','1'))
 			self.TOTAL = total
 			self.TOTAL_ON_LAST_PAGE = total % perpage
@@ -45,7 +44,7 @@ class Maps:
 	def __init__(self):
 		self.map_source = ['google','yahoo','osm'][int(__settings__.getSetting('default_map_source'))]
 		if self.map_source == 'yahoo':
-			import elementtree.ElementTree as et
+			import elementtree.ElementTree as et #@UnresolvedImport
 			self.ET = et
 		self.zoom =  {	'country':int(__settings__.getSetting('country_zoom')),
 						'region':int(__settings__.getSetting('region_zoom')),
@@ -83,7 +82,7 @@ class Maps:
 		else:
 			url = "http://maps.google.com/maps/api/staticmap?center="+lat+","+lon+"&zoom="+zoom+"&size="+str(width)+"x"+str(height)+"&sensor=false&maptype="+self.default_map_type+"&format=jpg"
 
-		fname,ignore  = urllib.urlretrieve(url + mark,ipath)
+		fname,ignore  = urllib.urlretrieve(url + mark,ipath) #@UnusedVariable
 		return fname
 
 	def translateZoomToYahoo(self,zoom):
@@ -96,7 +95,7 @@ class Maps:
 		
 	def doMap(self):
 		clearDirFiles(CACHE_PATH)
-		image = self.getMap(sys.argv[2],sys.argv[3],'photo',width=640,height=360,marker=True)
+		self.getMap(sys.argv[2],sys.argv[3],'photo',width=640,height=360,marker=True)
 		xbmc.executebuiltin('SlideShow('+CACHE_PATH+')')
 	
 class FlickrSession:
@@ -132,8 +131,7 @@ class FlickrSession:
 		return self.DISPLAY_VALUES[int(index)]
 		
 	def doTokenDialog(self,frob,perms):
-		dialog = xbmcgui.Dialog()
-		ok = dialog.ok(__language__(30505),__language__(30506).replace('@REPLACE@',': 2ndmind.com/flickrxbmc'), __language__(30507))
+		xbmcgui.Dialog().ok(__language__(30505),__language__(30506).replace('@REPLACE@',': 2ndmind.com/flickrxbmc'), __language__(30507))
 		keyboard = xbmc.Keyboard('',__language__(30508))
 		keyboard.doModal()
 		if (keyboard.isConfirmed()):
@@ -148,15 +146,14 @@ class FlickrSession:
 			f.close()
 			if not token: raise
 		except:
-			dialog = xbmcgui.Dialog()
-			ok = dialog.ok('Error fetching token', '')
+			xbmcgui.Dialog().ok('Error fetching token', '')
 			xbmcplugin.endOfDirectory(int(sys.argv[1]))
 		self.flickr.token_cache.token = token
 
 	def authenticate(self):
 		#try:
 		self.flickr = flickrPLUS(self.API_KEY,self.API_SECRET)
-		(token, frob) = self.flickr.get_token_part_one(perms='read',auth_callback=self.doTokenDialog)
+		(token, frob) = self.flickr.get_token_part_one(perms='read',auth_callback=self.doTokenDialog) #@UnusedVariable
 		#if not token:
 		#	token = doTokenDialog()
 		#self.flickr.get_token_part_two((token, frob))
@@ -275,7 +272,7 @@ class FlickrSession:
 			pg = (page==2) and '-1' or  str(page-1) #if previous page is one, set to -1 to differentiate from initial showing
 			self.addDir(previous.replace('@REPLACE@',str(self.max_per_page)),url,mode,os.path.join(IMAGES_PATH,'previous.png'),page = pg,userid=kwargs.get('userid',''))
 			
-		info_list = []
+		#info_list = []
 		extras = self.SIZE_KEYS[self.defaultThumbSize] + ',' + self.SIZE_KEYS[self.defaultDisplaySize]
 		if mapOption: extras += ',geo'
 		
@@ -423,7 +420,6 @@ class FlickrSession:
 		self.addPhotos(self.flickr.photos_search,1022,url=woeid,page=page,woe_id=woeid,user_id='me',mapOption=True)
 	
 	def addLink(self,name,url,iconimage,tot=0,contextMenu=None):
-		ok=True
 		#u=sys.argv[0]+"?url="+urllib.quote_plus(url)+"&name="+urllib.quote_plus(name)
 		liz=xbmcgui.ListItem(name, iconImage="DefaultImage.png", thumbnailImage=iconimage)
 		liz.setInfo( type="image", infoLabels={ "Title": name } )
@@ -433,14 +429,13 @@ class FlickrSession:
 	def addDir(self,name,url,mode,iconimage,page=1,tot=0,userid=''):
 		if userid: userid = "&userid="+urllib.quote_plus(userid)
 		u=sys.argv[0]+"?url="+urllib.quote_plus(url)+"&mode="+str(mode)+"&page="+str(page)+userid+"&name="+urllib.quote_plus(name.encode('ascii','replace'))
-		ok=True
 		liz=xbmcgui.ListItem(name, 'test',iconImage="DefaultFolder.png", thumbnailImage=iconimage)
 		liz.setInfo( type="image", infoLabels={"Title": name} )
 		return xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=u,listitem=liz,isFolder=True,totalItems=tot)
 
 class ImageShower(xbmcgui.Window):
 	def showImage(self,image):
-		self.addControl(xbmcgui.ControlImage(0,0,test.getWidth(),test.getHeight(), image, aspectRatio=2))
+		self.addControl(xbmcgui.ControlImage(0,0,self.getWidth(),self.getHeight(), image, aspectRatio=2))
 		
 	def onAction(self,action):
 		if action == 10 or action == 9: self.close()		
@@ -469,7 +464,7 @@ def get_params():
 				param[splitparams[0]]=splitparams[1]
 							
 	return param
-        
+
 ### Do plugin stuff --------------------------------------------------------------------------
 def doPlugin():
 	params=get_params()
@@ -576,16 +571,14 @@ def doPlugin():
 			fsession.PLACES(8,woeid=url,name=name,zoom='region')
 	except HTTPError,e:
 		if(e.reason[1] == 504):
-			dialog = xbmcgui.Dialog()
-			ok = dialog.ok(__language__(30502), __language__(30504))
+			xbmcgui.Dialog().ok(__language__(30502), __language__(30504))
 			success = False
 		else:
 			raise
 	except URLError,e:
 		print e.reason
 		if(e.reason[0] == 110):
-			dialog = xbmcgui.Dialog()
-			ok = dialog.ok(__language__(30503), __language__(30504))
+			xbmcgui.Dialog().ok(__language__(30503), __language__(30504))
 			success = False
 		else:
 			raise
