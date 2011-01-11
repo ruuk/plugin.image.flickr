@@ -14,7 +14,7 @@ __version__ = '0.9.8'
 __settings__ = xbmcaddon.Addon(id='plugin.image.flickr')
 __language__ = __settings__.getLocalizedString
 
-IMAGES_PATH = xbmc.translatePath( os.path.join( os.getcwd(), 'resources', 'images' ) )
+IMAGES_PATH = os.path.join(__settings__.getAddonInfo('path'),'resources', 'images')
 CACHE_PATH = xbmc.translatePath('special://profile/addon_data/plugin.image.flickr/cache/')
 
 if not os.path.exists(CACHE_PATH): os.makedirs(CACHE_PATH)
@@ -117,6 +117,7 @@ class FlickrSession:
 		self.user_id = None
 		self.loadSettings()
 		self.maps = None
+		self.justAuthorized = False
 		if __settings__.getSetting('enable_maps') == 'true': self.maps = Maps()
 		
 	def loadSettings(self):
@@ -131,32 +132,46 @@ class FlickrSession:
 		return self.DISPLAY_VALUES[int(index)]
 		
 	def doTokenDialog(self,frob,perms):
-		xbmcgui.Dialog().ok(__language__(30505),__language__(30506).replace('@REPLACE@',': 2ndmind.com/flickrxbmc'), __language__(30507))
-		keyboard = xbmc.Keyboard('',__language__(30508))
-		keyboard.doModal()
-		if (keyboard.isConfirmed()):
-			email = keyboard.getText()
-		keyboard = xbmc.Keyboard('',__language__(30509))
-		keyboard.doModal()
-		if (keyboard.isConfirmed()):
-			code = keyboard.getText()
-		try:
-			f = urllib.urlopen("http://2ndmind.com/flickrxbmc/index.py?gettoken="+email+'-'+code)
-			token = f.read()
-			f.close()
-			if not token: raise
-		except:
-			xbmcgui.Dialog().ok('Error fetching token', '')
-			xbmcplugin.endOfDirectory(int(sys.argv[1]))
-		self.flickr.token_cache.token = token
+		url = self.flickr.auth_url('read',frob)
+		xbmcplugin.endOfDirectory(int(sys.argv[1]),succeeded=False)
+		self.justAuthorized = True
+		xbmcgui.Dialog().ok(__language__(30507),__language__(30508),__language__(30509))
+		from webviewer import webviewer #@UnresolvedImport
+		autoforms = [	{'action':'login.yahoo.com/config/login'},
+						{'url':'.+perms=.+','action':'services/auth','index':2},
+						{'url':'.+services/auth/$','action':'services/auth'}]
+		autoClose = {	'url':'.+services/auth/$',
+						'html':'(?s).+successfully authorized.+',
+						'heading':__language__(30505),
+						'message':__language__(30506)}
+		url,html = webviewer.getWebResult(url,autoForms=autoforms,autoClose=autoClose) #@UnusedVariable
+		print 'AUTH RESPONSE URL: ' + url
 
+	def extractTokenFromURL(self,url):
+		from cgi import parse_qs
+		import urlparse
+		try:
+			token = parse_qs(urlparse.urlparse(url.replace('#','?',1))[4])['token'][0].strip()
+		except:
+			print 'Invalid Token'
+			return None
+		return token
+	
 	def authenticate(self):
 		#try:
 		self.flickr = flickrPLUS(self.API_KEY,self.API_SECRET)
 		(token, frob) = self.flickr.get_token_part_one(perms='read',auth_callback=self.doTokenDialog) #@UnusedVariable
-		#if not token:
-		#	token = doTokenDialog()
-		#self.flickr.get_token_part_two((token, frob))
+		try:
+			self.flickr.get_token_part_two((token, frob))
+		except:
+			if self.justAuthorized:
+				xbmcgui.Dialog().ok(__language__(30520),__language__(30521),str(sys.exc_info()[1]))
+			else:
+				xbmcgui.Dialog().ok(__language__(30522),__language__(30523),str(sys.exc_info()[1]))
+			print "Failed to get token. Probably did not authorize."
+		print "AUTH DONE"
+		if self.justAuthorized: return False
+		
 		if self.username:
 			user = self.flickr.people_findByUsername(username=self.username)
 			self.user_id = user.findall('*')[0].get('id')
@@ -166,11 +181,7 @@ class FlickrSession:
 			self.user_id = user.attrib.get('nsid')
 			self.username = user.attrib.get('username')
 			if self.username: __settings__.setSetting('flickr_username',self.username)
-				
-		#except:
-		#	dialog = xbmcgui.Dialog()
-		#	ok = dialog.ok('Authentication Error', '?')
-		#	xbmcplugin.endOfDirectory(int(sys.argv[1]))
+		return True
 			
 	def getCollectionsInfoList(self,userid=None,cid='0'):
 		if not userid: userid = self.user_id
@@ -506,7 +517,9 @@ def doPlugin():
 
 	try:
 		fsession = FlickrSession()
-		fsession.authenticate()
+		if not fsession.authenticate():
+			mode = 9999
+			url = 'AUTHENTICATE'
 
 		if page>1 or page<0: update_dir=True
 		page = abs(page)
@@ -583,7 +596,7 @@ def doPlugin():
 		else:
 			raise
 		
-	xbmcplugin.endOfDirectory(int(sys.argv[1]),succeeded=success,updateListing=update_dir,cacheToDisc=cache)
+	if mode != 9999: xbmcplugin.endOfDirectory(int(sys.argv[1]),succeeded=success,updateListing=update_dir,cacheToDisc=cache)
 
 if sys.argv[1] == 'map':
 	Maps().doMap()
