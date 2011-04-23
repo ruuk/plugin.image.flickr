@@ -10,7 +10,7 @@ __plugin__ = 'flickr'
 __author__ = 'ruuk'
 __url__ = 'http://code.google.com/p/flickrxbmc/'
 __date__ = '01-11-2011'
-__version__ = '0.9.9'
+__version__ = '0.9.91'
 __settings__ = xbmcaddon.Addon(id='plugin.image.flickr')
 __language__ = __settings__.getLocalizedString
 
@@ -38,7 +38,23 @@ class flickrPLUS(flickrapi.FlickrAPI):
 
 			# Yield each photo 
 			for photo in photos:
-				yield photo 
+				yield photo
+				
+	def get_full_token(self, mini_token):
+		'''Gets the token given a certain frob. Used by ``get_token_part_two`` and
+		by the web authentication method.
+		'''
+		
+		# get a token
+		rsp = self.auth_getFullToken(mini_token=mini_token, format='xmlnode')
+
+		token = rsp.auth[0].token[0].text
+		flickrapi.LOG.debug("get_token: new token '%s'" % token)
+		
+		# store the auth info for next time
+		self.token_cache.token = token
+
+		return token
 
 class Maps:
 	def __init__(self):
@@ -102,6 +118,9 @@ class FlickrSession:
 	API_KEY = '0a802e6334304794769996c84c57d187'
 	API_SECRET = '655ce70e86ac412e'
 	
+	MOBILE_API_KEY = 'f9b69ca9510b3f55fdc15aa869614b39'
+	MOBILE_API_SECRET = 'fdba8bb77fc10921'
+	
 	DISPLAY_VALUES = ['Square','Thumbnail','Small','Medium','Medium640','Large','Original']
 	SIZE_KEYS = {	'Square':'url_sq',
 					'Thumbnail':'url_t',
@@ -113,6 +132,7 @@ class FlickrSession:
 	
 	def __init__(self,username=None):
 		self.flickr = None
+		self.mobile = True
 		self.username = username
 		self.user_id = None
 		self.loadSettings()
@@ -131,7 +151,39 @@ class FlickrSession:
 	def getDisplayValue(self,index):
 		return self.DISPLAY_VALUES[int(index)]
 		
+	def isMobile(self,set=None):
+		if set == None: return __settings__.getSetting('mobile') == 'true'
+		if set:
+			__settings__.setSetting('mobile','true')
+			self.flickr.api_key = self.MOBILE_API_KEY
+			self.flickr.secret = self.MOBILE_API_SECRET
+		else:
+			__settings__.setSetting('mobile','false')
+			self.flickr.api_key = self.API_KEY
+			self.flickr.secret = self.API_SECRET
+	
+	def getKeys(self):
+		if self.isMobile():
+			return self.MOBILE_API_KEY,self.MOBILE_API_SECRET
+		else:
+			return self.API_KEY,self.API_SECRET
+		
 	def doTokenDialog(self,frob,perms):
+		try:
+			from webviewer import webviewer #@UnresolvedImport @UnusedImport
+			yes = xbmcgui.Dialog().yesno('Authenticate','Press \'Yes\' to authenticate in any browser','Press \'No\' to use Web Viewer (If Installed)')
+			if not yes:
+				self.isMobile(False)
+				self.doNormalTokenDialog(frob, perms)
+				return
+		except:
+			print "Web Viewer Not Installed - Using Mobile Method"
+			pass
+			
+		self.isMobile(True)
+		self.doMiniTokenDialog(frob, perms)
+		
+	def doNormalTokenDialog(self,frob,perms):
 		url = self.flickr.auth_url('read',frob)
 		xbmcplugin.endOfDirectory(int(sys.argv[1]),succeeded=False)
 		self.justAuthorized = True
@@ -157,10 +209,28 @@ class FlickrSession:
 			return None
 		return token
 	
+	def doMiniTokenDialog(self,frob,perms):
+		xbmcgui.Dialog().ok("AUTHENTICATE",'Go to http://xbmc.2ndmind.com/auth','get the code and click OK to continue')
+		mini_token = ''
+		message = 'Enter 9 digit code'
+		while not len(mini_token) == 9 or not mini_token.isdigit():
+			keyboard = xbmc.Keyboard('',message)
+			message = 'BAD CODE. Re-enter 9 digit code'
+			keyboard.doModal()
+			if not keyboard.isConfirmed(): return
+			mini_token = keyboard.getText().replace('-','')
+		token = self.flickr.get_full_token(mini_token) #@UnusedVariable
+		
 	def authenticate(self):
-		#try:
-		self.flickr = flickrPLUS(self.API_KEY,self.API_SECRET)
-		(token, frob) = self.flickr.get_token_part_one(perms='read',auth_callback=self.doTokenDialog) #@UnusedVariable
+		key,secret = self.getKeys()
+		self.flickr = flickrPLUS(key,secret)
+		(token, frob) = self.flickr.get_token_part_one(perms='read',auth_callback=self.doTokenDialog)
+		if self.isMobile():
+			return self.authenticateMobile(token)
+		else:
+			return self.authenticateWebViewer(token,frob)
+		
+	def authenticateWebViewer(self,token,frob):
 		try:
 			self.flickr.get_token_part_two((token, frob))
 		except:
@@ -171,7 +241,16 @@ class FlickrSession:
 			print "Failed to get token. Probably did not authorize."
 		print "AUTH DONE"
 		if self.justAuthorized: return False
+		return self.finishAuthenticate(token)
 		
+	def authenticateMobile(self,token):
+		if not token:
+			print "Failed to get token (Mobile). Probably did not authorize."
+			return False
+		return self.finishAuthenticate(token)
+		
+	def finishAuthenticate(self,token):
+		self.flickr.token_cache.token = token
 		if self.username:
 			user = self.flickr.people_findByUsername(username=self.username)
 			self.user_id = user.findall('*')[0].get('id')

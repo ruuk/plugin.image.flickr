@@ -1,6 +1,11 @@
 flickrXBMC Changelog
 
-Current Version : 0.9.9
+Current Version : 0.9.91
+
+** 0.9.91 ***
+
+Removed Web Viewer requirement.
+Added option to authorize via external browser.
 
 ** 0.9.9 ***
 
