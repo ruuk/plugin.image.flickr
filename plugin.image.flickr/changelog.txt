@@ -1,6 +1,10 @@
 flickrXBMC Changelog
 
-Current Version : 0.9.91
+Current Version : 0.9.92
+
+** 0.9.92 ***
+
+Changes for Eden
 
 ** 0.9.91 ***
 

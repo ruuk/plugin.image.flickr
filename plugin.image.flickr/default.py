@@ -9,8 +9,8 @@ from urllib2 import HTTPError, URLError
 __plugin__ = 'flickr'
 __author__ = 'ruuk'
 __url__ = 'http://code.google.com/p/flickrxbmc/'
-__date__ = '01-11-2011'
-__version__ = '0.9.91'
+__date__ = '01-14-2012'
+__version__ = '0.9.92'
 __settings__ = xbmcaddon.Addon(id='plugin.image.flickr')
 __language__ = __settings__.getLocalizedString
 
