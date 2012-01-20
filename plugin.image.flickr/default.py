@@ -14,8 +14,27 @@ __version__ = '0.9.92'
 __settings__ = xbmcaddon.Addon(id='plugin.image.flickr')
 __language__ = __settings__.getLocalizedString
 
-IMAGES_PATH = os.path.join(__settings__.getAddonInfo('path'),'resources', 'images')
+IMAGES_PATH = os.path.join(xbmc.translatePath(__settings__.getAddonInfo('path')),'resources', 'images')
 CACHE_PATH = xbmc.translatePath('special://profile/addon_data/plugin.image.flickr/cache/')
+
+import locale
+loc = locale.getdefaultlocale()
+print loc
+ENCODING = loc[1] or 'utf-8'
+
+def ENCODE(string):
+	return string.encode(ENCODING,'replace')
+
+def LOG(message):
+	print 'plugin.image.flickr: %s' % ENCODE(str(message))
+	
+def ERROR(message,caption=''):
+	LOG(message)
+	import traceback
+	traceback.print_exc()
+	err = str(sys.exc_info()[1])
+	xbmcgui.Dialog().ok(__language__(30520) + caption,err)
+	return err
 
 if not os.path.exists(CACHE_PATH): os.makedirs(CACHE_PATH)
 
@@ -666,14 +685,16 @@ def doPlugin():
 			xbmcgui.Dialog().ok(__language__(30502), __language__(30504))
 			success = False
 		else:
-			raise
+			ERROR('UNHANDLED HTTP ERROR',' (HTTP)')
 	except URLError,e:
 		print e.reason
 		if(e.reason[0] == 110):
 			xbmcgui.Dialog().ok(__language__(30503), __language__(30504))
 			success = False
 		else:
-			raise
+			ERROR('UNHANDLED URL ERROR',' (URL)')
+	except:
+		ERROR('UNHANDLED ERROR')
 		
 	if mode != 9999: xbmcplugin.endOfDirectory(int(sys.argv[1]),succeeded=success,updateListing=update_dir,cacheToDisc=cache)
 
