@@ -5,6 +5,7 @@ Current Version : 0.9.92
 ** 0.9.92 ***
 
 Changes for Eden
+Better error handling
 
 ** 0.9.91 ***
 
