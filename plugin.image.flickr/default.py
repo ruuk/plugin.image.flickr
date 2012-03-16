@@ -3,7 +3,7 @@
 import flickrapi
 import urllib
 import xbmc, xbmcgui, xbmcplugin, xbmcaddon #@UnresolvedImport
-import sys, os, time
+import sys, os, time, binascii
 from urllib2 import HTTPError, URLError
 
 __plugin__ = 'flickr'
@@ -75,6 +75,75 @@ class flickrPLUS(flickrapi.FlickrAPI):
 
 		return token
 
+def photoURL(farm,server,nsid,secret='',buddy=False,size='',ext='jpg'):
+	replace = (farm,server,nsid)
+	if secret: secret = '_' + secret
+	if buddy:
+		return 'http://farm%s.staticflickr.com/%s/buddyicons/%s.jpg' % replace #last %s not is to use same replace
+	elif not size:
+		return 'http://farm%s.staticflickr.com/%s/%s%s.jpg' % (replace + (secret,))
+	else:
+		return 'http://farm%s.staticflickr.com/%s/%s%s_%s.%s' % (replace + (secret,size,ext))
+		
+	'''
+	s	small square 75x75
+	q	large square 150x150
+	t	thumbnail, 100 on longest side
+	m	small, 240 on longest side
+	n	small, 320 on longest side
+	-	medium, 500 on longest side
+	z	medium 640, 640 on longest side
+	b	large, 1024 on longest side*
+	o	original image, either a jpg, gif or png, depending on source format
+	'''
+	
+def doShare():
+	LOG('Sharing Photo')
+	try:
+		import ShareSocial #@UnresolvedImport
+	except:
+		return
+	
+	photo = photoHexToDict(sys.argv[2])
+	print photo
+	plink = 'http://www.flickr.com/photos/%s/%s' % (photo.get('owner'),photo.get('id'))
+	if photo.get('media') == 'photo':
+		share = ShareSocial.getShare('plugin.image.flickr','image')
+	else:
+		share = ShareSocial.getShare('plugin.image.flickr','video')
+		
+	share.sourceName = 'flickr'
+	share.page = plink
+	share.thumbnail = photo.get('thumb')
+	share.latitude = photo.get('lat')
+	share.longitude = photo.get('lon')
+	
+	if photo.get('media') == 'photo':
+		share.media = photo.get('photo')
+		share.title = 'flickr Photo: %s' % photo.get('title')
+	elif photo.get('media') == 'video':
+		url = photo.get('playerurl','')
+		embed = '<object type="application/x-shockwave-flash" width="%s" height="%s" data="%s"  classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"> <param name="flashvars" value="flickr_show_info_box=false"></param> <param name="movie" value="%s"></param><param name="bgcolor" value="#000000"></param><param name="allowFullScreen" value="true"></param><embed type="application/x-shockwave-flash" src="%s" bgcolor="#000000" allowfullscreen="true" flashvars="flickr_show_info_box=false" height="%s" width="%s"></embed></object>'
+		embed = embed % (640,480,url,url,url,480,640)
+		share.title = 'flickr Video: %s' % photo.get('title')
+		share.swf = url
+		share.embed = embed
+	else:
+		return False
+	
+	share.share()
+	
+	return True
+	
+def photoHexToDict(hexstr):
+	pstr = binascii.unhexlify(hexstr).decode('utf-8')
+	photo = {}
+	for l in pstr.splitlines():
+		key,value = l.split('=',1)
+		photo[key] = value
+		
+	return photo
+	
 class Maps:
 	def __init__(self):
 		self.map_source = ['google','yahoo','osm'][int(__settings__.getSetting('default_map_source'))]
@@ -88,7 +157,7 @@ class Maps:
 						'photo':int(__settings__.getSetting('photo_zoom'))}
 		self.default_map_type = ['hybrid','satellite','terrain','roadmap'][int(__settings__.getSetting('default_map_type'))]
 		
-	def getMap(self,lat,lon,zoom,width=256,height=256,marker=False):
+	def getMap(self,lat,lon,zoom,width=256,height=256,scale=1,marker=False):
 		#640x36
 		source = self.map_source
 		lat = str(lat)
@@ -115,7 +184,7 @@ class Maps:
 			url = urllib.unquote_plus(url)
 			if 'error' in url: return ''
 		else:
-			url = "http://maps.google.com/maps/api/staticmap?center="+lat+","+lon+"&zoom="+zoom+"&size="+str(width)+"x"+str(height)+"&sensor=false&maptype="+self.default_map_type+"&format=jpg"
+			url = "http://maps.google.com/maps/api/staticmap?center="+lat+","+lon+"&zoom="+zoom+"&size="+str(width)+"x"+str(height)+"&sensor=false&maptype="+self.default_map_type+"&scale="+str(scale)+"&format=jpg"
 
 		fname,ignore  = urllib.urlretrieve(url + mark,ipath) #@UnusedVariable
 		return fname
@@ -130,7 +199,7 @@ class Maps:
 		
 	def doMap(self):
 		clearDirFiles(CACHE_PATH)
-		self.getMap(sys.argv[2],sys.argv[3],'photo',width=640,height=360,marker=True)
+		self.getMap(sys.argv[2],sys.argv[3],'photo',width=640,height=360,scale=2,marker=True)
 		xbmc.executebuiltin('SlideShow('+CACHE_PATH+')')
 	
 class FlickrSession:
@@ -382,19 +451,14 @@ class FlickrSession:
 			self.addDir(previous.replace('@REPLACE@',str(self.max_per_page)),url,mode,os.path.join(IMAGES_PATH,'previous.png'),page = pg,userid=kwargs.get('userid',''))
 			
 		#info_list = []
-		extras = self.SIZE_KEYS[self.defaultThumbSize] + ',' + self.SIZE_KEYS[self.defaultDisplaySize]
+		extras = 'media,url_sq, url_t, url_s, url_m, url_l,url_o' + self.SIZE_KEYS[self.defaultThumbSize] + ',' + self.SIZE_KEYS[self.defaultDisplaySize]
 		if mapOption: extras += ',geo'
 		
 		#Walk photos
 		ct=1
 		for photo in self.flickr.walk_photos_by_page(method,page=page,per_page=self.max_per_page,extras=extras,**kwargs):
 			ct+=1
-			ok = self.addPhoto(	photo.get('title'),
-								photo.get('id'),
-								photo.get(self.SIZE_KEYS[self.defaultThumbSize]),
-								photo.get(self.SIZE_KEYS[self.defaultDisplaySize]),
-								lat=photo.get('latitude'),lon=photo.get('longitude'),
-								mapOption=mapOption)
+			ok = self.addPhoto(photo, mapOption=mapOption)
 			if not ok: break
 			
 		#Add Next Footer if necessary
@@ -411,24 +475,56 @@ class FlickrSession:
 				replace = str(self.max_per_page)
 			if page < self.flickr.TOTAL_PAGES: self.addDir(next.replace('@REPLACE@',replace)+' ->',url,mode,os.path.join(IMAGES_PATH,'next.png'),page=str(page+1),userid=kwargs.get('userid',''))
 		
-	def addPhoto(self,title,pid,thumb,display,mapOption=False,lat='',lon=''):
+	def addPhoto(self,photo,mapOption=False):
+		title = photo.get('title')
+		pid = photo.get('id')
+		#ptype = photo.get('media') == 'video' and 'video' or 'image'
+		ptype = 'image'
+		thumb = photo.get(self.SIZE_KEYS[self.defaultThumbSize])
+		display = photo.get(self.SIZE_KEYS[self.defaultDisplaySize])
 		if not (thumb and display):
-			urls = self.getImageUrl(pid,label='all')
-			display = urls.get(self.defaultDisplaySize,urls.get('Original',''))
-			thumb = urls.get(self.defaultThumbSize,urls.get('Square',''))
+			display = photo.get(self.SIZE_KEYS[self.defaultDisplaySize],photo.get('url_o',''))
+			thumb = photo.get(self.SIZE_KEYS[self.defaultThumbSize],photo.get('url_s',''))
 			if not display:
 				rd = self.DISPLAY_VALUES[:]
 				rd.reverse()
 				for s in rd:
-					if urls.get(s):
-						display = urls.get(s)
+					if photo.get(s):
+						display = photo.get(s)
 						break
-		contextMenu = None
+		contextMenu = []
 		if mapOption:
+			lat=photo.get('latitude')
+			lon=photo.get('longitude')
 			if not lat+lon == '00':
-				contextMenu = [(__language__(30510),'XBMC.RunScript(special://home/addons/plugin.image.flickr/default.py,map,'+lat+','+lon+')')]
-		return self.addLink(title,display,thumb,tot=self.flickr.TOTAL_ON_PAGE,contextMenu=contextMenu)
+				contextMenu.append((__language__(30510),'XBMC.RunScript(special://home/addons/plugin.image.flickr/default.py,map,'+lat+','+lon+')'))
 		
+		player = ''
+		if photo.get('media') == 'video':
+			player = 'playerurl=%s\n'  % self.getImageUrl(pid,label='Video Player')
+		run = 'XBMC.RunScript(special://home/addons/plugin.image.flickr/default.py,share,%s)' % self.photoAsHexString(photo,player)
+		contextMenu.append(('Share...',run))
+		
+		return self.addLink(title,display,thumb,tot=self.flickr.TOTAL_ON_PAGE,contextMenu=contextMenu,ltype=ptype)
+		
+	def photoAsHexString(self,photo,player):
+		out = player
+		out += 'id=%s\n' % photo.get('id','')
+		out += 'type=%s\n' % photo.get('media','')
+		out += 'owner=%s\n' % photo.get('owner',self.user_id)
+		out += 'title=%s\n' % photo.get('title')
+		if photo.get('media') == 'video':
+			out += 'thumb=%s\n' % photo.get('url_o',photo.get('url_l',photo.get('url_m','')))
+			out += 'photo=%s\n' % photo.get('url_o',photo.get('url_l',photo.get('url_m','')))
+		else:
+			out += 'thumb=%s\n' % photo.get('url_t',photo.get('url_s',''))
+			out += 'photo=%s\n' % photo.get('url_l',photo.get('url_o',photo.get('url_t','')))
+		out += 'media=%s\n' % photo.get('media','')
+		out += 'secret=%s\n' % photo.get('secret','')
+		out += 'lat=%s\n' % photo.get('latitude',0)
+		out += 'lon=%s' % photo.get('longitude',0)
+		return binascii.hexlify(out.encode('utf-8'))
+			
 	def CATEGORIES(self):
 		self.addDir(__language__(30300),'photostream',1,os.path.join(IMAGES_PATH,'photostream.png'))
 		self.addDir(__language__(30301),'collections',2,os.path.join(IMAGES_PATH,'collections.png'))
@@ -528,10 +624,11 @@ class FlickrSession:
 	def PLACE(self,woeid,page):
 		self.addPhotos(self.flickr.photos_search,1022,url=woeid,page=page,woe_id=woeid,user_id='me',mapOption=True)
 	
-	def addLink(self,name,url,iconimage,tot=0,contextMenu=None):
+	def addLink(self,name,url,iconimage,tot=0,contextMenu=None,ltype='image'):
 		#u=sys.argv[0]+"?url="+urllib.quote_plus(url)+"&name="+urllib.quote_plus(name)
 		liz=xbmcgui.ListItem(name, iconImage="DefaultImage.png", thumbnailImage=iconimage)
-		liz.setInfo( type="image", infoLabels={ "Title": name } )
+		liz.setInfo( type=ltype, infoLabels={ "Title": name } )
+		liz.setProperty( "sharing","handled" )
 		if contextMenu: liz.addContextMenuItems(contextMenu)
 		return xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=url,listitem=liz,isFolder=False,totalItems=tot)
 
@@ -623,6 +720,7 @@ def doPlugin():
 		page = abs(page)
 
 		if mode==None or url==None or len(url)<1:
+			registerAsShareTarget()
 			clearDirFiles(CACHE_PATH)
 			fsession.CATEGORIES()
 		elif mode==1:
@@ -698,7 +796,25 @@ def doPlugin():
 		
 	if mode != 9999: xbmcplugin.endOfDirectory(int(sys.argv[1]),succeeded=success,updateListing=update_dir,cacheToDisc=cache)
 
-if sys.argv[1] == 'map':
-	Maps().doMap()
-else:
-	doPlugin()
+def registerAsShareTarget():
+	try:
+		import ShareSocial #@UnresolvedImport
+	except:
+		LOG('Could not import ShareSocial')
+		return
+	
+	target = ShareSocial.getShareTarget()
+	target.addonID = 'plugin.image.flickr'
+	target.name = 'flickr'
+	target.importPath = 'share'
+	target.provideTypes = ['feed']
+	ShareSocial.registerShareTarget(target)
+	LOG('Registered as share target with ShareSocial')
+		
+if __name__ == '__main__':
+	if sys.argv[1] == 'map':
+		Maps().doMap()
+	elif sys.argv[1] == 'share':
+		doShare()
+	else:
+		doPlugin()
