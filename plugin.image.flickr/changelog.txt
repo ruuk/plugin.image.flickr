@@ -1,6 +1,10 @@
 flickrXBMC Changelog
 
-Current Version : 0.9.92
+Current Version : 0.9.93
+
+** 0.9.93 ***
+
+Added feeds and sharing in the context menu for ShareSocial
 
 ** 0.9.92 ***
 
