@@ -22,6 +22,8 @@ loc = locale.getdefaultlocale()
 print loc
 ENCODING = loc[1] or 'utf-8'
 
+ShareSocial = None
+
 def ENCODE(string):
 	return string.encode(ENCODING,'replace')
 
@@ -96,53 +98,6 @@ def photoURL(farm,server,nsid,secret='',buddy=False,size='',ext='jpg'):
 	b	large, 1024 on longest side*
 	o	original image, either a jpg, gif or png, depending on source format
 	'''
-	
-def doShare():
-	LOG('Sharing Photo')
-	try:
-		import ShareSocial #@UnresolvedImport
-	except:
-		return
-	
-	photo = photoHexToDict(sys.argv[2])
-	print photo
-	plink = 'http://www.flickr.com/photos/%s/%s' % (photo.get('owner'),photo.get('id'))
-	if photo.get('media') == 'photo':
-		share = ShareSocial.getShare('plugin.image.flickr','image')
-	else:
-		share = ShareSocial.getShare('plugin.image.flickr','video')
-		
-	share.sourceName = 'flickr'
-	share.page = plink
-	share.thumbnail = photo.get('thumb')
-	share.latitude = photo.get('lat')
-	share.longitude = photo.get('lon')
-	
-	if photo.get('media') == 'photo':
-		share.media = photo.get('photo')
-		share.title = 'flickr Photo: %s' % photo.get('title')
-	elif photo.get('media') == 'video':
-		url = photo.get('playerurl','')
-		embed = '<object type="application/x-shockwave-flash" width="%s" height="%s" data="%s"  classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"> <param name="flashvars" value="flickr_show_info_box=false"></param> <param name="movie" value="%s"></param><param name="bgcolor" value="#000000"></param><param name="allowFullScreen" value="true"></param><embed type="application/x-shockwave-flash" src="%s" bgcolor="#000000" allowfullscreen="true" flashvars="flickr_show_info_box=false" height="%s" width="%s"></embed></object>'
-		embed = embed % (640,480,url,url,url,480,640)
-		share.title = 'flickr Video: %s' % photo.get('title')
-		share.swf = url
-		share.embed = embed
-	else:
-		return False
-	
-	share.share()
-	
-	return True
-	
-def photoHexToDict(hexstr):
-	pstr = binascii.unhexlify(hexstr).decode('utf-8')
-	photo = {}
-	for l in pstr.splitlines():
-		key,value = l.split('=',1)
-		photo[key] = value
-		
-	return photo
 	
 class Maps:
 	def __init__(self):
@@ -442,6 +397,12 @@ class FlickrSession:
 				return s.get('source')
 		
 	def addPhotos(self,method,mode,url='BLANK',page='1',mapOption=True,**kwargs):
+		global ShareSocial
+		try:
+			import ShareSocial #@UnresolvedImport
+		except:
+			pass
+		
 		page = int(page)
 		
 		#Add Previous Header if necessary
@@ -499,31 +460,42 @@ class FlickrSession:
 			if not lat+lon == '00':
 				contextMenu.append((__language__(30510),'XBMC.RunScript(special://home/addons/plugin.image.flickr/default.py,map,'+lat+','+lon+')'))
 		
-		player = ''
-		if photo.get('media') == 'video':
-			player = 'playerurl=%s\n'  % self.getImageUrl(pid,label='Video Player')
-		run = 'XBMC.RunScript(special://home/addons/plugin.image.flickr/default.py,share,%s)' % self.photoAsHexString(photo,player)
-		contextMenu.append(('Share...',run))
+		if ShareSocial:
+			player = ''
+			if photo.get('media') == 'video':
+				player = self.getImageUrl(pid,label='Video Player')
+			run = self.getShareString(photo,player)
+			if run: contextMenu.append(('Share...',run))
 		
 		return self.addLink(title,display,thumb,tot=self.flickr.TOTAL_ON_PAGE,contextMenu=contextMenu,ltype=ptype)
 		
-	def photoAsHexString(self,photo,player):
-		out = player
-		out += 'id=%s\n' % photo.get('id','')
-		out += 'type=%s\n' % photo.get('media','')
-		out += 'owner=%s\n' % photo.get('owner',self.user_id)
-		out += 'title=%s\n' % photo.get('title')
-		if photo.get('media') == 'video':
-			out += 'thumb=%s\n' % photo.get('url_o',photo.get('url_l',photo.get('url_m','')))
-			out += 'photo=%s\n' % photo.get('url_o',photo.get('url_l',photo.get('url_m','')))
+	def getShareString(self,photo,player):
+		plink = 'http://www.flickr.com/photos/%s/%s' % (photo.get('owner',self.user_id),photo.get('id'))
+		if photo.get('media') == 'photo':
+			share = ShareSocial.getShare('plugin.image.flickr','image')
 		else:
-			out += 'thumb=%s\n' % photo.get('url_t',photo.get('url_s',''))
-			out += 'photo=%s\n' % photo.get('url_l',photo.get('url_o',photo.get('url_t','')))
-		out += 'media=%s\n' % photo.get('media','')
-		out += 'secret=%s\n' % photo.get('secret','')
-		out += 'lat=%s\n' % photo.get('latitude',0)
-		out += 'lon=%s' % photo.get('longitude',0)
-		return binascii.hexlify(out.encode('utf-8'))
+			share = ShareSocial.getShare('plugin.image.flickr','video')
+			
+		share.sourceName = 'flickr'
+		share.page = plink
+		share.latitude = photo.get('latitude')
+		share.longitude = photo.get('longitude')
+		
+		if photo.get('media') == 'photo':
+			share.thumbnail = photo.get('url_t',photo.get('url_s',''))
+			share.media = photo.get('url_l',photo.get('url_o',photo.get('url_t','')))
+			share.title = 'flickr Photo: %s' % photo.get('title')
+		elif photo.get('media') == 'video':
+			share.thumbnail = photo.get('url_o',photo.get('url_l',photo.get('url_m','')))
+			embed = '<object type="application/x-shockwave-flash" width="%s" height="%s" data="%s"  classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"> <param name="flashvars" value="flickr_show_info_box=false"></param> <param name="movie" value="%s"></param><param name="bgcolor" value="#000000"></param><param name="allowFullScreen" value="true"></param><embed type="application/x-shockwave-flash" src="%s" bgcolor="#000000" allowfullscreen="true" flashvars="flickr_show_info_box=false" height="%s" width="%s"></embed></object>'
+			embed = embed % (640,480,player,player,player,480,640)
+			share.title = 'flickr Video: %s' % photo.get('title')
+			share.swf = player
+			share.embed = embed
+		else:
+			return None
+		
+		return share.toPluginRunscriptString()
 			
 	def CATEGORIES(self):
 		self.addDir(__language__(30300),'photostream',1,os.path.join(IMAGES_PATH,'photostream.png'))
@@ -814,7 +786,5 @@ def registerAsShareTarget():
 if __name__ == '__main__':
 	if sys.argv[1] == 'map':
 		Maps().doMap()
-	elif sys.argv[1] == 'share':
-		doShare()
 	else:
 		doPlugin()
