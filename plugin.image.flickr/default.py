@@ -439,8 +439,8 @@ class FlickrSession:
 	def addPhoto(self,photo,mapOption=False):
 		title = photo.get('title')
 		pid = photo.get('id')
-		#ptype = photo.get('media') == 'video' and 'video' or 'image'
-		ptype = 'image'
+		ptype = photo.get('media') == 'video' and 'video' or 'image'
+		#ptype = 'image'
 		thumb = photo.get(self.SIZE_KEYS[self.defaultThumbSize])
 		display = photo.get(self.SIZE_KEYS[self.defaultDisplaySize])
 		if not (thumb and display):
@@ -453,6 +453,10 @@ class FlickrSession:
 					if photo.get(s):
 						display = photo.get(s)
 						break
+		sizes = {}
+		if ptype == 'video':
+			sizes = self.getImageUrl(pid,'all')
+			display = sizes.get('Site MP4',photo.get('Video Original',''))
 		contextMenu = []
 		if mapOption:
 			lat=photo.get('latitude')
@@ -461,15 +465,12 @@ class FlickrSession:
 				contextMenu.append((__language__(30510),'XBMC.RunScript(special://home/addons/plugin.image.flickr/default.py,map,'+lat+','+lon+')'))
 		
 		if ShareSocial:
-			player = ''
-			if photo.get('media') == 'video':
-				player = self.getImageUrl(pid,label='Video Player')
-			run = self.getShareString(photo,player)
+			run = self.getShareString(photo,sizes)
 			if run: contextMenu.append(('Share...',run))
 		
 		return self.addLink(title,display,thumb,tot=self.flickr.TOTAL_ON_PAGE,contextMenu=contextMenu,ltype=ptype)
 		
-	def getShareString(self,photo,player):
+	def getShareString(self,photo,sizes):
 		plink = 'http://www.flickr.com/photos/%s/%s' % (photo.get('owner',self.user_id),photo.get('id'))
 		if photo.get('media') == 'photo':
 			share = ShareSocial.getShare('plugin.image.flickr','image')
@@ -488,9 +489,11 @@ class FlickrSession:
 		elif photo.get('media') == 'video':
 			share.thumbnail = photo.get('url_o',photo.get('url_l',photo.get('url_m','')))
 			embed = '<object type="application/x-shockwave-flash" width="%s" height="%s" data="%s"  classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"> <param name="flashvars" value="flickr_show_info_box=false"></param> <param name="movie" value="%s"></param><param name="bgcolor" value="#000000"></param><param name="allowFullScreen" value="true"></param><embed type="application/x-shockwave-flash" src="%s" bgcolor="#000000" allowfullscreen="true" flashvars="flickr_show_info_box=false" height="%s" width="%s"></embed></object>'
-			embed = embed % (640,480,player,player,player,480,640)
+			url = sizes.get('Video Player','')
+			embed = embed % (640,480,url,url,url,480,640)
 			share.title = 'flickr Video: %s' % photo.get('title')
-			share.swf = player
+			share.swf = url
+			share.media = sizes.get('Site MP4',photo.get('Video Original',''))
 			share.embed = embed
 		else:
 			return None
