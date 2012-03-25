@@ -1,6 +1,11 @@
 flickrXBMC Changelog
 
-Current Version : 0.9.93
+Current Version : 0.9.94
+
+** 0.9.94 ***
+
+Videos are now playable
+Videos playable from external source via plugin:// url
 
 ** 0.9.93 ***
 

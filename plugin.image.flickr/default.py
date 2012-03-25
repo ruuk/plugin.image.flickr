@@ -10,7 +10,7 @@ __plugin__ = 'flickr'
 __author__ = 'ruuk'
 __url__ = 'http://code.google.com/p/flickrxbmc/'
 __date__ = '01-14-2012'
-__version__ = '0.9.93'
+__version__ = '0.9.94'
 __settings__ = xbmcaddon.Addon(id='plugin.image.flickr')
 __language__ = __settings__.getLocalizedString
 
@@ -457,6 +457,7 @@ class FlickrSession:
 		if ptype == 'video':
 			sizes = self.getImageUrl(pid,'all')
 			display = sizes.get('Site MP4',photo.get('Video Original',''))
+			#display = 'plugin://plugin.image.flickr/?play_video&' + pid
 		contextMenu = []
 		if mapOption:
 			lat=photo.get('latitude')
@@ -493,7 +494,7 @@ class FlickrSession:
 			embed = embed % (640,480,url,url,url,480,640)
 			share.title = 'flickr Video: %s' % photo.get('title')
 			share.swf = url
-			share.media = sizes.get('Site MP4',photo.get('Video Original',''))
+			share.media = sizes.get('Site MP4',sizes.get('Video Original',''))
 			share.embed = embed
 		else:
 			return None
@@ -771,6 +772,18 @@ def doPlugin():
 		
 	if mode != 9999: xbmcplugin.endOfDirectory(int(sys.argv[1]),succeeded=success,updateListing=update_dir,cacheToDisc=cache)
 
+def playVideo():
+		fsession = FlickrSession()
+		if not fsession.authenticate():
+			return None
+		vid = sys.argv[2].split('=')[-1]
+		LOG('Playing video with ID: ' + vid)
+		sizes = fsession.getImageUrl(vid, 'all')
+		url = sizes.get('Site MP4',sizes.get('Video Original',''))
+		listitem = xbmcgui.ListItem(label='flickr Video', path=url)
+		listitem.setInfo(type='Video',infoLabels={"Title": 'flickr Video'})
+		xbmcplugin.setResolvedUrl(handle=int(sys.argv[1]), succeeded=True, listitem=listitem)
+
 def registerAsShareTarget():
 	try:
 		import ShareSocial #@UnresolvedImport
@@ -787,7 +800,10 @@ def registerAsShareTarget():
 	LOG('Registered as share target with ShareSocial')
 		
 if __name__ == '__main__':
+	print sys.argv
 	if sys.argv[1] == 'map':
 		Maps().doMap()
+	elif len(sys.argv) > 2 and sys.argv[2].startswith('?video_id'):
+		playVideo()
 	else:
 		doPlugin()
