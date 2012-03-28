@@ -1,6 +1,10 @@
 flickrXBMC Changelog
 
-Current Version : 0.9.94
+Current Version : 0.9.95
+
+** 0.9.95 ***
+
+Added handling of of empty photostream when proividing feed
 
 ** 0.9.94 ***
 

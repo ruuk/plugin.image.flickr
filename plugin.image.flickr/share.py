@@ -16,7 +16,12 @@ class FlickrTargetFunctions(ShareSocial.TargetFunctions):
 			LOG('Providing feed to ShareSocial')
 			photos = flickr.activity_userPhotos(timeframe='365d')
 			
-			g = photos.find('items').find('item').attrib.get
+			try:
+				g = photos.find('items').find('item').attrib.get
+			except:
+				LOG('sharing: provide(): No items in photostream')
+				return getObj.error('EMPTYFEED')
+			
 			clientid = g('owner','')
 			clientname = g('ownername','')
 			clienticon = photoURL(g('iconfarm',''),g('iconserver',''),g('owner',''),buddy=True)
