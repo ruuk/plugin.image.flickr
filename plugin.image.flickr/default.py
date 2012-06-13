@@ -10,7 +10,7 @@ __plugin__ = 'flickr'
 __author__ = 'ruuk'
 __url__ = 'http://code.google.com/p/flickrxbmc/'
 __date__ = '01-14-2012'
-__version__ = '0.9.96'
+__version__ = '0.9.97'
 __settings__ = xbmcaddon.Addon(id='plugin.image.flickr')
 __language__ = __settings__.getLocalizedString
 
@@ -268,7 +268,7 @@ class FlickrSession:
 		self.flickr = flickrPLUS(key,secret)
 		(token, frob) = self.flickr.get_token_part_one(perms='read',auth_callback=self.doTokenDialog)
 		if self.isMobile():
-			return self.authenticateMobile(token)
+			return self.authenticateMobile(self.flickr.token_cache.token)
 		else:
 			return self.authenticateWebViewer(token,frob)
 		
