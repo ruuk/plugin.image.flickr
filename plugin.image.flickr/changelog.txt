@@ -1,6 +1,11 @@
 flickrXBMC Changelog
 
-Current Version : 0.9.95
+Current Version : 0.9.96
+
+
+** 0.9.96 ***
+
+Fix for photos with no title set. Will now try title, then date taken, then date uploaded and finally photo id
 
 ** 0.9.95 ***
 

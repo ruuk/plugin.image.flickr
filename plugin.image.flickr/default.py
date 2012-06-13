@@ -3,14 +3,14 @@
 import flickrapi
 import urllib
 import xbmc, xbmcgui, xbmcplugin, xbmcaddon #@UnresolvedImport
-import sys, os, time, binascii
+import sys, os, time
 from urllib2 import HTTPError, URLError
 
 __plugin__ = 'flickr'
 __author__ = 'ruuk'
 __url__ = 'http://code.google.com/p/flickrxbmc/'
 __date__ = '01-14-2012'
-__version__ = '0.9.95'
+__version__ = '0.9.96'
 __settings__ = xbmcaddon.Addon(id='plugin.image.flickr')
 __language__ = __settings__.getLocalizedString
 
@@ -19,7 +19,6 @@ CACHE_PATH = xbmc.translatePath('special://profile/addon_data/plugin.image.flick
 
 import locale
 loc = locale.getdefaultlocale()
-print loc
 ENCODING = loc[1] or 'utf-8'
 
 ShareSocial = None
@@ -220,7 +219,7 @@ class FlickrSession:
 				self.doNormalTokenDialog(frob, perms)
 				return
 		except:
-			print "Web Viewer Not Installed - Using Mobile Method"
+			LOG("Web Viewer Not Installed - Using Mobile Method")
 			pass
 			
 		self.isMobile(True)
@@ -240,7 +239,7 @@ class FlickrSession:
 						'heading':__language__(30505),
 						'message':__language__(30506)}
 		url,html = webviewer.getWebResult(url,autoForms=autoforms,autoClose=autoClose) #@UnusedVariable
-		print 'AUTH RESPONSE URL: ' + url
+		LOG('AUTH RESPONSE URL: ' + url)
 
 	def extractTokenFromURL(self,url):
 		from cgi import parse_qs
@@ -248,7 +247,7 @@ class FlickrSession:
 		try:
 			token = parse_qs(urlparse.urlparse(url.replace('#','?',1))[4])['token'][0].strip()
 		except:
-			print 'Invalid Token'
+			LOG('Invalid Token')
 			return None
 		return token
 	
@@ -281,14 +280,14 @@ class FlickrSession:
 				xbmcgui.Dialog().ok(__language__(30520),__language__(30521),str(sys.exc_info()[1]))
 			else:
 				xbmcgui.Dialog().ok(__language__(30522),__language__(30523),str(sys.exc_info()[1]))
-			print "Failed to get token. Probably did not authorize."
-		print "AUTH DONE"
+			LOG("Failed to get token. Probably did not authorize.")
+		LOG("AUTH DONE")
 		if self.justAuthorized: return False
 		return self.finishAuthenticate(token)
 		
 	def authenticateMobile(self,token):
 		if not token:
-			print "Failed to get token (Mobile). Probably did not authorize."
+			LOG("Failed to get token (Mobile). Probably did not authorize.")
 			return False
 		return self.finishAuthenticate(token)
 		
@@ -412,7 +411,7 @@ class FlickrSession:
 			self.addDir(previous.replace('@REPLACE@',str(self.max_per_page)),url,mode,os.path.join(IMAGES_PATH,'previous.png'),page = pg,userid=kwargs.get('userid',''))
 			
 		#info_list = []
-		extras = 'media,url_sq, url_t, url_s, url_m, url_l,url_o' + self.SIZE_KEYS[self.defaultThumbSize] + ',' + self.SIZE_KEYS[self.defaultDisplaySize]
+		extras = 'media, date_upload, date_taken, url_sq, url_t, url_s, url_m, url_l,url_o' + self.SIZE_KEYS[self.defaultThumbSize] + ',' + self.SIZE_KEYS[self.defaultDisplaySize]
 		if mapOption: extras += ',geo'
 		
 		#Walk photos
@@ -425,20 +424,26 @@ class FlickrSession:
 		#Add Next Footer if necessary
 		#print "PAGES: " + str(page) + " " + str(self.flickr.TOTAL_PAGES) + " " + self.flickr.TOTAL_ON_LAST_PAGE
 		if ct >= self.max_per_page:
-			next = '('+str(page*self.max_per_page)+'/'+str(self.flickr.TOTAL)+') '
+			nextp = '('+str(page*self.max_per_page)+'/'+str(self.flickr.TOTAL)+') '
 			replace = ''
 			if page + 1 == self.flickr.TOTAL_PAGES:
-				next += __language__(30513)
+				nextp += __language__(30513)
 				if self.flickr.TOTAL_ON_LAST_PAGE: replace = str(self.flickr.TOTAL_ON_LAST_PAGE)
 				else: replace = str(self.max_per_page)
 			else: 
-				next += __language__(30512)
+				nextp += __language__(30512)
 				replace = str(self.max_per_page)
-			if page < self.flickr.TOTAL_PAGES: self.addDir(next.replace('@REPLACE@',replace)+' ->',url,mode,os.path.join(IMAGES_PATH,'next.png'),page=str(page+1),userid=kwargs.get('userid',''))
+			if page < self.flickr.TOTAL_PAGES: self.addDir(nextp.replace('@REPLACE@',replace)+' ->',url,mode,os.path.join(IMAGES_PATH,'next.png'),page=str(page+1),userid=kwargs.get('userid',''))
 		
 	def addPhoto(self,photo,mapOption=False):
-		title = photo.get('title')
 		pid = photo.get('id')
+		title = photo.get('title')
+		if not title:
+			title = photo.get('datetaken')
+			if not title:
+				try: title = time.strftime('%m-%d-%y %I:%M %p',time.localtime(int(photo.get('dateupload'))))
+				except: pass
+				if not title: title = pid
 		ptype = photo.get('media') == 'video' and 'video' or 'image'
 		#ptype = 'image'
 		thumb = photo.get(self.SIZE_KEYS[self.defaultThumbSize])
@@ -677,10 +682,10 @@ def doPlugin():
 	except:
 			pass
 
-	print "Mode: "+str(mode)
-	print "URL: "+str(url)
-	print "Name: "+str(name)
-	print "Page: "+str(page)
+	#print "Mode: "+str(mode)
+	#print "URL: "+str(url)
+	#print "Name: "+str(name)
+	#print "Page: "+str(page)
 
 	update_dir = False
 	success = True
@@ -696,6 +701,8 @@ def doPlugin():
 		page = abs(page)
 
 		if mode==None or url==None or len(url)<1:
+			LOG('Version: ' + __version__)
+			LOG('Encoding: ' + ENCODING)
 			registerAsShareTarget()
 			clearDirFiles(CACHE_PATH)
 			fsession.CATEGORIES()
@@ -761,7 +768,7 @@ def doPlugin():
 		else:
 			ERROR('UNHANDLED HTTP ERROR',' (HTTP)')
 	except URLError,e:
-		print e.reason
+		LOG(e.reason)
 		if(e.reason[0] == 110):
 			xbmcgui.Dialog().ok(__language__(30503), __language__(30504))
 			success = False
@@ -800,7 +807,7 @@ def registerAsShareTarget():
 	LOG('Registered as share target with ShareSocial')
 		
 if __name__ == '__main__':
-	print sys.argv
+	#print sys.argv
 	if sys.argv[1] == 'map':
 		Maps().doMap()
 	elif len(sys.argv) > 2 and sys.argv[2].startswith('?video_id'):
