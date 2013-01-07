@@ -1,10 +1,16 @@
 flickrXBMC Changelog
 
-Current Version : 0.9.97
+Current Version : 0.9.98
+
+** 0.9.98 ***
+
+Added option in settings: 'Access as user (Requires Authentication)'
+Added the ability to browse flickr without authorization. If username is not set in settings, only 'Search flickr' and 'Interesting Today' will be available
+Now when asking for token entry after external browser authorization, clicking done on a blank entry will exit the dialog loop (ie for ATV2)
 
 ** 0.9.97 ***
 
-Fixed bug where initial authorization via external web browser fails, but succeeds on second attempt.
+Fixed a bug where initial authorization via external web browser fails, but succeeds on second attempt
 
 ** 0.9.96 ***
 

@@ -9,8 +9,8 @@ from urllib2 import HTTPError, URLError
 __plugin__ = 'flickr'
 __author__ = 'ruuk'
 __url__ = 'http://code.google.com/p/flickrxbmc/'
-__date__ = '01-14-2012'
-__version__ = '0.9.97'
+__date__ = '01-07-2013'
+__version__ = '0.9.98'
 __settings__ = xbmcaddon.Addon(id='plugin.image.flickr')
 __language__ = __settings__.getLocalizedString
 
@@ -174,6 +174,7 @@ class FlickrSession:
 	
 	def __init__(self,username=None):
 		self.flickr = None
+		self._authenticated = False
 		self.mobile = True
 		self.username = username
 		self.user_id = None
@@ -181,6 +182,8 @@ class FlickrSession:
 		self.maps = None
 		self.justAuthorized = False
 		if __settings__.getSetting('enable_maps') == 'true': self.maps = Maps()
+		
+	def authenticated(self): return self._authenticated
 		
 	def loadSettings(self):
 		self.username = __settings__.getSetting('flickr_username')
@@ -218,9 +221,11 @@ class FlickrSession:
 				self.isMobile(False)
 				self.doNormalTokenDialog(frob, perms)
 				return
-		except:
+		except ImportError:
 			LOG("Web Viewer Not Installed - Using Mobile Method")
 			pass
+		except:
+			return
 			
 		self.isMobile(True)
 		self.doMiniTokenDialog(frob, perms)
@@ -261,16 +266,21 @@ class FlickrSession:
 			keyboard.doModal()
 			if not keyboard.isConfirmed(): return
 			mini_token = keyboard.getText().replace('-','')
+			if not mini_token: return
 		token = self.flickr.get_full_token(mini_token) #@UnusedVariable
 		
 	def authenticate(self):
 		key,secret = self.getKeys()
 		self.flickr = flickrPLUS(key,secret)
+		if __settings__.getSetting('authenticate') != 'true': return True
 		(token, frob) = self.flickr.get_token_part_one(perms='read',auth_callback=self.doTokenDialog)
 		if self.isMobile():
-			return self.authenticateMobile(self.flickr.token_cache.token)
+			result = self.authenticateMobile(self.flickr.token_cache.token)
 		else:
-			return self.authenticateWebViewer(token,frob)
+			result = self.authenticateWebViewer(token,frob)
+			
+		if result: self._authenticated = True
+		return result
 		
 	def authenticateWebViewer(self,token,frob):
 		try:
@@ -505,21 +515,43 @@ class FlickrSession:
 			return None
 		
 		return share.toPluginRunscriptString()
-			
+		
+	def userID(self):
+		if self.user_id: return self.user_id
+		username = __settings__.getSetting('flickr_username')
+		self.username = username
+		if not username: return None
+		self.user_id = self.getUserID(username)
+		return self.userID()
+		
+	def getUserID(self,username):
+		if not username: return None
+		obj = self.flickr.people_findByUsername(username=username)
+		user = obj.find('user')
+		return user.attrib.get('nsid')
+		
 	def CATEGORIES(self):
-		self.addDir(__language__(30300),'photostream',1,os.path.join(IMAGES_PATH,'photostream.png'))
-		self.addDir(__language__(30301),'collections',2,os.path.join(IMAGES_PATH,'collections.png'))
-		self.addDir(__language__(30302),'sets',3,os.path.join(IMAGES_PATH,'sets.png'))
-		self.addDir(__language__(30303),'galleries',4,os.path.join(IMAGES_PATH,'galleries.png'))
-		self.addDir(__language__(30304),'tags',5,os.path.join(IMAGES_PATH,'tags.png'))
-		self.addDir(__language__(30307),'places',8,os.path.join(IMAGES_PATH,'places.png'))
-		self.addDir(__language__(30305),'favorites',6,os.path.join(IMAGES_PATH,'favorites.png'))
-		self.addDir(__language__(30306),'contacts',7,os.path.join(IMAGES_PATH,'contacts.png'))
-		self.addDir(__language__(30308),'@@search@@',9,os.path.join(IMAGES_PATH,'search_photostream.png'))
+		uid = self.userID()
+		if self.authenticated():
+			self.addDir(__language__(30300),'photostream',1,os.path.join(IMAGES_PATH,'photostream.png'))
+			self.addDir(__language__(30301),'collections',2,os.path.join(IMAGES_PATH,'collections.png'))
+			self.addDir(__language__(30302),'sets',3,os.path.join(IMAGES_PATH,'sets.png'))
+			self.addDir(__language__(30303),'galleries',4,os.path.join(IMAGES_PATH,'galleries.png'))
+			self.addDir(__language__(30304),'tags',5,os.path.join(IMAGES_PATH,'tags.png'))
+			self.addDir(__language__(30307),'places',8,os.path.join(IMAGES_PATH,'places.png'))
+			self.addDir(__language__(30305),'favorites',6,os.path.join(IMAGES_PATH,'favorites.png'))
+			self.addDir(__language__(30306),'contacts',7,os.path.join(IMAGES_PATH,'contacts.png'))
+			self.addDir(__language__(30308),'@@search@@',9,os.path.join(IMAGES_PATH,'search_photostream.png'))
+		elif uid:
+			self.CONTACT(uid, self.username)
 		self.addDir(__language__(30309),'@@search@@',10,os.path.join(IMAGES_PATH,'search_flickr.png'))
 		self.addDir(__language__(30310),'interesting',11,os.path.join(IMAGES_PATH,'interesting.png'))
 		
 	def PHOTOSTREAM(self,page,mode=1,userid='me'):
+		#if not self.authenticated() and userid == 'me':
+		#	userid = self.userID()
+		#	if not userid: return
+		#
 		self.addPhotos(self.flickr.photos_search,mode,url=userid,page=page,user_id=userid)
 		
 	def COLLECTION(self,cid,userid=None):
@@ -598,7 +630,7 @@ class FlickrSession:
 		self.addDir(__language__(30515).replace('@NAMEREPLACE@',name).replace('@REPLACE@',__language__(30302)),cid,703,os.path.join(IMAGES_PATH,'sets.png'))
 		self.addDir(__language__(30515).replace('@NAMEREPLACE@',name).replace('@REPLACE@',__language__(30303)),cid,704,os.path.join(IMAGES_PATH,'galleries.png'))
 		self.addDir(__language__(30515).replace('@NAMEREPLACE@',name).replace('@REPLACE@',__language__(30304)),cid,705,os.path.join(IMAGES_PATH,'tags.png'))
-		self.addDir(__language__(30515).replace('@NAMEREPLACE@',name).replace('@REPLACE@',__language__(30305)),cid,706,os.path.join(IMAGES_PATH,'favorites.png'))
+		if self.authenticated(): self.addDir(__language__(30515).replace('@NAMEREPLACE@',name).replace('@REPLACE@',__language__(30305)),cid,706,os.path.join(IMAGES_PATH,'favorites.png'))
 		self.addDir(__language__(30515).replace('@NAMEREPLACE@',name).replace('@REPLACE@',__language__(30306)),cid,707,os.path.join(IMAGES_PATH,'contacts.png'))
 		self.addDir(__language__(30516).replace('@NAMEREPLACE@',name),cid,709,os.path.join(IMAGES_PATH,'search_photostream.png'))
 		

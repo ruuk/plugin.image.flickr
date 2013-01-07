@@ -13,6 +13,7 @@
     <string id="30010">Photo Zoom</string>
     <string id="30011">Enable Maps Thumbnails</string>
     <string id="30012">Default Map Type</string>
+    <string id="30013">Access as user (Requires Authentication)</string>
     
     <!-- Image Sizes-->
     <string id="30100">Square</string>
