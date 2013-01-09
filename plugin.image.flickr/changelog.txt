@@ -1,6 +1,10 @@
 flickrXBMC Changelog
 
-Current Version : 0.9.98
+Current Version : 0.9.99
+
+** 0.9.99 ***
+
+Added option to photo context menu: 'Save Photo'
 
 ** 0.9.98 ***
 

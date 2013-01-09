@@ -44,6 +44,21 @@
     <string id="30309">Search flickr</string>
     <string id="30310">Interesting Today</string>
     
+    <!-- Save Photo -->
+    <string id="30400">Save Path</string>
+    <string id="30412">Saved</string>
+    <string id="30413">Saved as: @REPLACE@</string>
+    <string id="30414">In: @REPLACE@</string>
+    
+    <string id="30415">Saving</string>
+    <string id="30416">Saving...</string>
+    
+    <string id="30417">Invalid Path</string>
+    <string id="30418">Please set save path in settings</string>
+    
+    <string id="30419">Fail</string>
+    <string id="30420">Failed to save image.</string>
+    
     <!-- General Strings -->
     <string id="30500">Show All In @REPLACE@</string><!--example: Show All In Canada -->
     <string id="30501">Enter search tags</string>
@@ -63,6 +78,7 @@
     <string id="30514">@NAMEREPLACE@'s @REPLACE@</string><!--(Singular possesive) example: John's Photostream -->
     <string id="30515">@NAMEREPLACE@'s @REPLACE@</string><!--(Plural posessive) example: John's Sets -->
     <string id="30516">Search @NAMEREPLACE@'s Photostream</string><!--Search John's Photostream -->
+    <string id="30517">Save Photo</string><!--Search John's Photostream -->
     
     <string id="30520">Failed</string>
     <string id="30521">Authorization Failed.</string>

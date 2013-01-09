@@ -10,7 +10,7 @@ __plugin__ = 'flickr'
 __author__ = 'ruuk'
 __url__ = 'http://code.google.com/p/flickrxbmc/'
 __date__ = '01-07-2013'
-__version__ = '0.9.98'
+__version__ = '0.9.99'
 __settings__ = xbmcaddon.Addon(id='plugin.image.flickr')
 __language__ = __settings__.getLocalizedString
 
@@ -484,6 +484,9 @@ class FlickrSession:
 			run = self.getShareString(photo,sizes)
 			if run: contextMenu.append(('Share...',run))
 		
+		saveURL = photo.get('url_o',display)
+		contextMenu.append((__language__(30517),'XBMC.RunScript(special://home/addons/plugin.image.flickr/default.py,save,'+urllib.quote_plus(saveURL)+','+title+')'))
+		
 		return self.addLink(title,display,thumb,tot=self.flickr.TOTAL_ON_PAGE,contextMenu=contextMenu,ltype=ptype)
 		
 	def getShareString(self,photo,sizes):
@@ -823,6 +826,57 @@ def playVideo():
 		listitem.setInfo(type='Video',infoLabels={"Title": 'flickr Video'})
 		xbmcplugin.setResolvedUrl(handle=int(sys.argv[1]), succeeded=True, listitem=listitem)
 
+class SavePhoto:
+	def __init__(self):
+		url = urllib.unquote_plus(sys.argv[2])
+		savename = sys.argv[3]
+		if not savename.lower().endswith('.jpg'): savename += '.jpg' #Would be better if we determined image type but it should be .jpg 99.9% of the time
+		save_path = __settings__.getSetting('save_path')
+		saveFullPath = os.path.join(save_path,savename)
+		basePath = saveFullPath
+		ct=1
+		while os.path.exists(saveFullPath):
+			base = os.path.splitext(basePath)[0]
+			saveFullPath = base + '_%s.jpg' % ct
+			ct+=1
+			if ct > 99: break
+		self.pd = xbmcgui.DialogProgress()
+		self.pd.create(__language__(30415),__language__(30416))
+		try:
+			fail = False
+			if save_path:
+				try:
+					urllib.urlretrieve(url,saveFullPath,self.progressUpdate)
+				except:
+					fail = True
+			else:
+				fail = True
+				
+			if fail:
+				xbmcgui.Dialog().ok(__language__(30417),__language__(30418))
+				__settings__.openSettings()
+				save_path = __settings__.getSetting('save_path')
+				try:
+					urllib.urlretrieve(url,saveFullPath,self.progressUpdate)
+				except:
+					import traceback
+					traceback.print_exc()
+					xbmcgui.Dialog().ok(__language__(30419),__language__(30420))
+					return
+		finally:
+			self.pd.close()
+		xbmcgui.Dialog().ok(__language__(30412),__language__(30413).replace('@REPLACE@',os.path.basename(saveFullPath)),__language__(30414).replace('@REPLACE@',save_path))
+		
+	def progressUpdate(self,blocks,bsize,fsize):
+		#print 'cool',blocks,bsize,fsize
+		if fsize == -1 or fsize <= bsize:
+			self.pd.update(0)
+			#print 'test'
+			return
+		percent = int((float(blocks) / (fsize/bsize)) * 100)
+		#print percent
+		self.pd.update(percent)
+		
 def registerAsShareTarget():
 	try:
 		import ShareSocial #@UnresolvedImport
@@ -842,6 +896,8 @@ if __name__ == '__main__':
 	#print sys.argv
 	if sys.argv[1] == 'map':
 		Maps().doMap()
+	elif sys.argv[1] == 'save':
+		SavePhoto()
 	elif len(sys.argv) > 2 and sys.argv[2].startswith('?video_id'):
 		playVideo()
 	else:
