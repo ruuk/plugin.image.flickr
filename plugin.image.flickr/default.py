@@ -10,7 +10,7 @@ __plugin__ = 'flickr'
 __author__ = 'ruuk'
 __url__ = 'http://code.google.com/p/flickrxbmc/'
 __date__ = '01-07-2013'
-__version__ = '0.9.99'
+__version__ = '0.9.100'
 __settings__ = xbmcaddon.Addon(id='plugin.image.flickr')
 __language__ = __settings__.getLocalizedString
 
@@ -181,6 +181,7 @@ class FlickrSession:
 		self.loadSettings()
 		self.maps = None
 		self.justAuthorized = False
+		self.isSlideshow = False
 		if __settings__.getSetting('enable_maps') == 'true': self.maps = Maps()
 		
 	def authenticated(self): return self._authenticated
@@ -426,7 +427,9 @@ class FlickrSession:
 		
 		#Walk photos
 		ct=1
-		for photo in self.flickr.walk_photos_by_page(method,page=page,per_page=self.max_per_page,extras=extras,**kwargs):
+		mpp = self.max_per_page
+		if self.isSlideshow: mpp = 500
+		for photo in self.flickr.walk_photos_by_page(method,page=page,per_page=mpp,extras=extras,**kwargs):
 			ct+=1
 			ok = self.addPhoto(photo, mapOption=mapOption)
 			if not ok: break
@@ -486,6 +489,7 @@ class FlickrSession:
 		
 		saveURL = photo.get('url_o',display)
 		contextMenu.append((__language__(30517),'XBMC.RunScript(special://home/addons/plugin.image.flickr/default.py,save,'+urllib.quote_plus(saveURL)+','+title+')'))
+		#contextMenu.append(('Test...','XBMC.RunScript(special://home/addons/plugin.image.flickr/default.py,slideshow)'))
 		
 		return self.addLink(title,display,thumb,tot=self.flickr.TOTAL_ON_PAGE,contextMenu=contextMenu,ltype=ptype)
 		
@@ -684,38 +688,19 @@ def get_params():
 			splitparams=pairsofparams[i].split('=')
 			if (len(splitparams))==2:
 				param[splitparams[0]]=splitparams[1]
-							
+	else:
+		param={}					
 	return param
 
 ### Do plugin stuff --------------------------------------------------------------------------
 def doPlugin():
 	params=get_params()
-	url=None
-	name=None
-	mode=None
-	page=1
-	userid=''
 
-	try:
-			url=urllib.unquote_plus(params["url"])
-	except:
-			pass
-	try:
-			page=int(params["page"])
-	except:
-			pass
-	try:
-			userid=urllib.unquote_plus(params["userid"])
-	except:
-			pass
-	try:
-			name=urllib.unquote_plus(params["name"])
-	except:
-			pass
-	try:
-			mode=int(params["mode"])
-	except:
-			pass
+	url = urllib.unquote_plus(params.get("url",''))
+	page = int(params.get("page",'1'))
+	userid = urllib.unquote_plus(params.get("userid",''))
+	name = urllib.unquote_plus(params.get("name",''))
+	mode = int(params.get("mode",'0'))
 
 	#print "Mode: "+str(mode)
 	#print "URL: "+str(url)
@@ -728,6 +713,7 @@ def doPlugin():
 
 	try:
 		fsession = FlickrSession()
+		fsession.isSlideshow = params.get('plugin_slideshow_ss','false') == 'true'
 		if not fsession.authenticate():
 			mode = 9999
 			url = 'AUTHENTICATE'
@@ -735,7 +721,7 @@ def doPlugin():
 		if page>1 or page<0: update_dir=True
 		page = abs(page)
 
-		if mode==None or url==None or len(url)<1:
+		if mode==0 or url==None or len(url)<1:
 			LOG('Version: ' + __version__)
 			LOG('Encoding: ' + ENCODING)
 			registerAsShareTarget()
@@ -898,6 +884,9 @@ if __name__ == '__main__':
 		Maps().doMap()
 	elif sys.argv[1] == 'save':
 		SavePhoto()
+	elif sys.argv[1] == 'slideshow':
+		print 'test'
+		xbmc.executebuiltin('SlideShow(plugin://plugin.image.flickr?mode=1&url=slideshow&name=photostream)')
 	elif len(sys.argv) > 2 and sys.argv[2].startswith('?video_id'):
 		playVideo()
 	else:

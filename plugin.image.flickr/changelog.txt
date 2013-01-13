@@ -1,6 +1,10 @@
 flickrXBMC Changelog
 
-Current Version : 0.9.99
+Current Version : 0.9.100
+
+** 0.9.100 ***
+
+Now when 'plugin_slideshow_ss=true' is passed to the plugin, plugin will show up to 500 photos per page. Added to work with the Plugin Slideshow Screensaver addon
 
 ** 0.9.99 ***
 
