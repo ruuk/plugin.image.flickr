@@ -14,6 +14,7 @@
     <string id="30011">Enable Maps Thumbnails</string>
     <string id="30012">Default Map Type</string>
     <string id="30013">Access as user (Requires Authentication)</string>
+    <string id="30014">Re-authorize</string>
     
     <!-- Image Sizes-->
     <string id="30100">Square</string>
@@ -43,6 +44,7 @@
     <string id="30308">Search Photostream</string>
     <string id="30309">Search flickr</string>
     <string id="30310">Interesting Today</string>
+    <string id="30311">Groups</string>
     
     <!-- Save Photo -->
     <string id="30400">Save Path</string>
@@ -78,7 +80,8 @@
     <string id="30514">@NAMEREPLACE@'s @REPLACE@</string><!--(Singular possesive) example: John's Photostream -->
     <string id="30515">@NAMEREPLACE@'s @REPLACE@</string><!--(Plural posessive) example: John's Sets -->
     <string id="30516">Search @NAMEREPLACE@'s Photostream</string><!--Search John's Photostream -->
-    <string id="30517">Save Photo</string><!--Search John's Photostream -->
+    <string id="30517">Save Photo</string>
+    <string id="30518">Recent Photos</string>
     
     <string id="30520">Failed</string>
     <string id="30521">Authorization Failed.</string>

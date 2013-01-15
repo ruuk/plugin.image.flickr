@@ -1,6 +1,12 @@
 flickrXBMC Changelog
 
-Current Version : 0.9.100
+Current Version : 0.9.101
+
+** 0.9.101 ***
+
+Added 'Groups' which will list your groups. Selecting a group will show the group's photo pool
+Under 'Contacts' added '[Recent Photos]' which will show up to 50 photos (5 for each contact) from your contacts' photostreams.
+Added 'Re-authorize' option in settings to fix a broken auth (ie Bad Auth Token errors)
 
 ** 0.9.100 ***
 

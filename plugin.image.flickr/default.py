@@ -10,8 +10,8 @@ __plugin__ = 'flickr'
 __author__ = 'ruuk'
 __url__ = 'http://code.google.com/p/flickrxbmc/'
 __date__ = '01-07-2013'
-__version__ = '0.9.100'
 __settings__ = xbmcaddon.Addon(id='plugin.image.flickr')
+__version__ = __settings__.getAddonInfo('version')
 __language__ = __settings__.getLocalizedString
 
 IMAGES_PATH = os.path.join(xbmc.translatePath(__settings__.getAddonInfo('path')),'resources', 'images')
@@ -270,9 +270,10 @@ class FlickrSession:
 			if not mini_token: return
 		token = self.flickr.get_full_token(mini_token) #@UnusedVariable
 		
-	def authenticate(self):
+	def authenticate(self,force=False):
 		key,secret = self.getKeys()
 		self.flickr = flickrPLUS(key,secret)
+		if force: self.flickr.token_cache.token = ''
 		if __settings__.getSetting('authenticate') != 'true': return True
 		(token, frob) = self.flickr.get_token_part_one(perms='read',auth_callback=self.doTokenDialog)
 		if self.isMobile():
@@ -355,6 +356,15 @@ class FlickrSession:
 			info_list.append({'username':c.attrib.get('username',''),'id':c.attrib.get('nsid',''),'tn':tn})
 		return info_list
 	
+	def getGroupsInfoList(self,userid=None):
+		if not userid: userid = self.user_id
+		groups = self.flickr.groups_pools_getGroups(user_id=userid)
+		info_list = []
+		for g in groups.find('groups').findall('group'):
+			tn = "http://farm"+g.attrib.get('iconfarm','')+".static.flickr.com/"+g.attrib.get('iconserver','')+"/buddyicons/"+g.attrib.get('nsid','')+".jpg"
+			info_list.append({'name':g.attrib.get('name','0'),'count':g.attrib.get('photos','0'),'id':g.attrib.get('id',''),'tn':tn})
+		return info_list
+
 	def getGalleriesInfoList(self,userid=None):
 		if not userid: userid = self.user_id
 		galleries = self.flickr.galleries_getList(user_id=userid)
@@ -406,7 +416,7 @@ class FlickrSession:
 			if s.get('label') == label:
 				return s.get('source')
 		
-	def addPhotos(self,method,mode,url='BLANK',page='1',mapOption=True,**kwargs):
+	def addPhotos(self,method,mode,url='BLANK',page='1',mapOption=True,with_username=False,**kwargs):
 		global ShareSocial
 		try:
 			import ShareSocial #@UnresolvedImport
@@ -431,7 +441,7 @@ class FlickrSession:
 		if self.isSlideshow: mpp = 500
 		for photo in self.flickr.walk_photos_by_page(method,page=page,per_page=mpp,extras=extras,**kwargs):
 			ct+=1
-			ok = self.addPhoto(photo, mapOption=mapOption)
+			ok = self.addPhoto(photo, mapOption=mapOption,with_username=with_username)
 			if not ok: break
 			
 		#Add Next Footer if necessary
@@ -448,7 +458,7 @@ class FlickrSession:
 				replace = str(self.max_per_page)
 			if page < self.flickr.TOTAL_PAGES: self.addDir(nextp.replace('@REPLACE@',replace)+' ->',url,mode,os.path.join(IMAGES_PATH,'next.png'),page=str(page+1),userid=kwargs.get('userid',''))
 		
-	def addPhoto(self,photo,mapOption=False):
+	def addPhoto(self,photo,mapOption=False,with_username=False):
 		pid = photo.get('id')
 		title = photo.get('title')
 		if not title:
@@ -457,6 +467,11 @@ class FlickrSession:
 				try: title = time.strftime('%m-%d-%y %I:%M %p',time.localtime(int(photo.get('dateupload'))))
 				except: pass
 				if not title: title = pid
+				
+		if with_username:
+			username = photo.get('username','') or ''
+			title = '[B]%s:[/B] %s' % (username,title)
+			
 		ptype = photo.get('media') == 'video' and 'video' or 'image'
 		#ptype = 'image'
 		thumb = photo.get(self.SIZE_KEYS[self.defaultThumbSize])
@@ -548,6 +563,7 @@ class FlickrSession:
 			self.addDir(__language__(30307),'places',8,os.path.join(IMAGES_PATH,'places.png'))
 			self.addDir(__language__(30305),'favorites',6,os.path.join(IMAGES_PATH,'favorites.png'))
 			self.addDir(__language__(30306),'contacts',7,os.path.join(IMAGES_PATH,'contacts.png'))
+			self.addDir(__language__(30311),'groups',12,os.path.join(IMAGES_PATH,'groups.png'))
 			self.addDir(__language__(30308),'@@search@@',9,os.path.join(IMAGES_PATH,'search_photostream.png'))
 		elif uid:
 			self.CONTACT(uid, self.username)
@@ -606,9 +622,20 @@ class FlickrSession:
 		
 	def CONTACTS(self,userid=None):
 		contacts = self.getContactsInfoList(userid=userid)
-		total = len(contacts)
+		total = len(contacts) + 1
 		for c in contacts:
 			if not self.addDir(c['username'],c['id'],107,c['tn'],tot=total): break
+		if contacts:
+			self.addDir("[B][%s][/B]" % __language__(30518),'recent_photos',800,'',tot=total)
+			
+	def CONTACTS_RECENT_PHOTOS(self,userid=None):
+		self.addPhotos(self.flickr.photos_getContactsPhotos,800,mapOption=True, with_username=True, count=50)
+		
+	def GROUPS(self,userid=None):
+		groups = self.getGroupsInfoList(userid)
+		total = len(groups)
+		for g in groups:
+			if not self.addDir(g['name'] + ' (%s)' % g['count'],g['id'],112,g['tn'],tot=total): break
 			
 	def SEARCH_TAGS(self,tags,page,mode=9,userid=None):
 		if tags == '@@search@@' or tags == userid:
@@ -640,6 +667,9 @@ class FlickrSession:
 		if self.authenticated(): self.addDir(__language__(30515).replace('@NAMEREPLACE@',name).replace('@REPLACE@',__language__(30305)),cid,706,os.path.join(IMAGES_PATH,'favorites.png'))
 		self.addDir(__language__(30515).replace('@NAMEREPLACE@',name).replace('@REPLACE@',__language__(30306)),cid,707,os.path.join(IMAGES_PATH,'contacts.png'))
 		self.addDir(__language__(30516).replace('@NAMEREPLACE@',name),cid,709,os.path.join(IMAGES_PATH,'search_photostream.png'))
+		
+	def GROUP(self,groupid):
+		self.addPhotos(self.flickr.groups_pools_getPhotos,112,mapOption=True,group_id=groupid)
 		
 	def PLACE(self,woeid,page):
 		self.addPhotos(self.flickr.photos_search,1022,url=woeid,page=page,woe_id=woeid,user_id='me',mapOption=True)
@@ -750,6 +780,8 @@ def doPlugin():
 			fsession.SEARCH_TAGS(url,page,mode=10)
 		elif mode==11:
 			fsession.INTERESTING(page)
+		elif mode==12:
+			fsession.GROUPS()
 		elif mode==103:
 			fsession.SET(url,page)
 		elif mode==104:
@@ -758,6 +790,8 @@ def doPlugin():
 			fsession.TAG(url,page,userid=userid)
 		elif mode==107:
 			fsession.CONTACT(url,name)
+		elif mode==112:
+			fsession.GROUP(url)
 		elif mode==701:
 			fsession.PHOTOSTREAM(page,mode=701,userid=url)
 		elif mode==702:
@@ -774,6 +808,8 @@ def doPlugin():
 			fsession.CONTACTS(userid=url)
 		elif mode==709:
 			fsession.SEARCH_TAGS(url,page,mode=709,userid=url)
+		elif mode==800:
+			fsession.CONTACTS_RECENT_PHOTOS()
 		elif mode==1022:
 			fsession.PLACE(url,page)
 		elif mode==1007:
@@ -885,8 +921,14 @@ if __name__ == '__main__':
 	elif sys.argv[1] == 'save':
 		SavePhoto()
 	elif sys.argv[1] == 'slideshow':
-		print 'test'
 		xbmc.executebuiltin('SlideShow(plugin://plugin.image.flickr?mode=1&url=slideshow&name=photostream)')
+	elif sys.argv[1] == 'reset_auth':
+		fsession = FlickrSession()
+		if fsession.authenticate(force=True):
+			xbmcgui.Dialog().ok(__language__(30507),__language__(30506))
+		else:
+			xbmcgui.Dialog().ok(__language__(30520),__language__(30521))
+		
 	elif len(sys.argv) > 2 and sys.argv[2].startswith('?video_id'):
 		playVideo()
 	else:
