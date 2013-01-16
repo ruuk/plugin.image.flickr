@@ -628,7 +628,7 @@ class FlickrSession:
 		for c in contacts:
 			if not self.addDir(c['username'],c['id'],107,c['tn'],tot=total): break
 		if contacts:
-			self.addDir("[B][%s][/B]" % __language__(30518),'recent_photos',800,'photostream.png',tot=total)
+			self.addDir("[B][%s][/B]" % __language__(30518),'recent_photos',800,os.path.join(IMAGES_PATH,'photostream.png'),tot=total)
 			
 	def CONTACTS_RECENT_PHOTOS(self,userid=None):
 		self.addPhotos(self.flickr.photos_getContactsPhotos,800,mapOption=True, with_username=True, count=50)

@@ -1,6 +1,10 @@
 flickrXBMC Changelog
 
-Current Version : 0.9.102
+Current Version : 0.9.103
+
+** 0.9.103 ***
+
+Fix images
 
 ** 0.9.102 ***
 
