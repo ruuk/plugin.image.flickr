@@ -1,6 +1,12 @@
 flickrXBMC Changelog
 
-Current Version : 0.9.101
+Current Version : 0.9.102
+
+** 0.9.102 ***
+
+Added 'Groups' icon, set Contacts '[Recent Photos]' icon to 'Photostream' icon
+Made 'Re-authorize' settings option only enabled when 'Access As User' is set
+Fixed issue when authorizing via the 'Re-authorize' button
 
 ** 0.9.101 ***
 

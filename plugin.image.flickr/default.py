@@ -273,17 +273,19 @@ class FlickrSession:
 	def authenticate(self,force=False):
 		key,secret = self.getKeys()
 		self.flickr = flickrPLUS(key,secret)
-		if force: self.flickr.token_cache.token = ''
-		if __settings__.getSetting('authenticate') != 'true': return True
+		if force:
+			self.flickr.token_cache.token = ''
+		else:
+			if __settings__.getSetting('authenticate') != 'true': return True
 		(token, frob) = self.flickr.get_token_part_one(perms='read',auth_callback=self.doTokenDialog)
 		if self.isMobile():
 			result = self.authenticateMobile(self.flickr.token_cache.token)
 		else:
 			result = self.authenticateWebViewer(token,frob)
-			
+
 		if result: self._authenticated = True
 		return result
-		
+
 	def authenticateWebViewer(self,token,frob):
 		try:
 			self.flickr.get_token_part_two((token, frob))
@@ -626,7 +628,7 @@ class FlickrSession:
 		for c in contacts:
 			if not self.addDir(c['username'],c['id'],107,c['tn'],tot=total): break
 		if contacts:
-			self.addDir("[B][%s][/B]" % __language__(30518),'recent_photos',800,'',tot=total)
+			self.addDir("[B][%s][/B]" % __language__(30518),'recent_photos',800,'photostream.png',tot=total)
 			
 	def CONTACTS_RECENT_PHOTOS(self,userid=None):
 		self.addPhotos(self.flickr.photos_getContactsPhotos,800,mapOption=True, with_username=True, count=50)
