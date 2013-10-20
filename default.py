@@ -358,13 +358,27 @@ class FlickrSession:
 			info_list.append({'username':c.attrib.get('username',''),'id':c.attrib.get('nsid',''),'tn':tn})
 		return info_list
 	
-	def getGroupsInfoList(self,userid=None):
-		if not userid: userid = self.user_id
-		groups = self.flickr.groups_pools_getGroups(user_id=userid)
+	def getGroupsInfoList(self,userid=None,search=None,page=1):
+		total = None
+		if search:
+			groups = self.flickr.groups_search(text=search,page=page,per_page=self.max_per_page)
+			info = groups.find('groups')
+			page = int(info.attrib.get('page','1'))
+			pages = int(info.attrib.get('pages','1'))
+			perpage = int(info.attrib.get('perpage','1'))
+			total = int(info.attrib.get('total','1'))
+			self.flickr.TOTAL = total
+			self.flickr.TOTAL_ON_LAST_PAGE = total % perpage
+			self.flickr.TOTAL_ON_PAGE = perpage
+			self.flickr.TOTAL_PAGES = pages
+			if page == pages: self.flickr.TOTAL_ON_PAGE = self.flickr.TOTAL_ON_LAST_PAGE
+		else:
+			if not userid: userid = self.user_id
+			groups = self.flickr.groups_pools_getGroups(user_id=userid)
 		info_list = []
 		for g in groups.find('groups').findall('group'):
 			tn = "http://farm"+g.attrib.get('iconfarm','')+".static.flickr.com/"+g.attrib.get('iconserver','')+"/buddyicons/"+g.attrib.get('nsid','')+".jpg"
-			info_list.append({'name':g.attrib.get('name','0'),'count':g.attrib.get('photos','0'),'id':g.attrib.get('id',''),'tn':tn})
+			info_list.append({'name':g.attrib.get('name','0'),'count':g.attrib.get('photos',g.attrib.get('pool_count','0')),'id':g.attrib.get('id',g.attrib.get('nsid','')),'tn':tn})
 		return info_list
 
 	def getGalleriesInfoList(self,userid=None):
@@ -570,6 +584,7 @@ class FlickrSession:
 		elif uid:
 			self.CONTACT(uid, self.username)
 		self.addDir(__language__(30309),'@@search@@',10,os.path.join(IMAGES_PATH,'search_flickr.png'))
+		self.addDir(__language__(30312),'@@search@@',13,os.path.join(IMAGES_PATH,'search_flickr.png'))
 		self.addDir(__language__(30310),'interesting',11,os.path.join(IMAGES_PATH,'interesting.png'))
 		
 	def PHOTOSTREAM(self,page,mode=1,userid='me'):
@@ -639,12 +654,43 @@ class FlickrSession:
 		for g in groups:
 			if not self.addDir(g['name'] + ' (%s)' % g['count'],g['id'],112,g['tn'],tot=total): break
 			
+	def getText(self,prompt=__language__(30501)):
+		keyboard = xbmc.Keyboard('',prompt)
+		keyboard.doModal()
+		if (keyboard.isConfirmed()):
+			return keyboard.getText()
+		return None
+	
+	def SEARCH_GROUPS(self,tags,page=1):
+		if not tags or tags == '@@search@@':
+			tags = self.getText() or tags
+		groups = self.getGroupsInfoList(search=tags,page=page)
+		total = len(groups)
+		
+		page = int(page)
+		#Add Previous Header if necessary
+		if page > 1:
+			previous = '<- '+__language__(30511)
+			pg = (page==2) and '-1' or  str(page-1) #if previous page is one, set to -1 to differentiate from initial showing
+			self.addDir(previous.replace('@REPLACE@',str(self.max_per_page)),tags,13,os.path.join(IMAGES_PATH,'previous.png'),page = pg)
+			
+		for g in groups:
+			if not self.addDir(g['name'] + ' (%s)' % g['count'],g['id'],112,g['tn'],tot=total): break
+		if total >= self.max_per_page:
+			nextp = '('+str(page*self.max_per_page)+'/'+str(self.flickr.TOTAL)+') '
+			replace = ''
+			if page + 1 == self.flickr.TOTAL_PAGES:
+				nextp += __language__(30513)
+				if self.flickr.TOTAL_ON_LAST_PAGE: replace = str(self.flickr.TOTAL_ON_LAST_PAGE)
+				else: replace = str(self.max_per_page)
+			else: 
+				nextp += __language__(30512)
+				replace = str(self.max_per_page)
+			if page < self.flickr.TOTAL_PAGES: self.addDir(nextp.replace('@REPLACE@',replace)+' ->',tags,13,os.path.join(IMAGES_PATH,'next.png'),page=str(page+1))
+			
 	def SEARCH_TAGS(self,tags,page,mode=9,userid=None):
 		if tags == '@@search@@' or tags == userid:
-			keyboard = xbmc.Keyboard('',__language__(30501))
-			keyboard.doModal()
-			if (keyboard.isConfirmed()):
-				tags = keyboard.getText()
+			tags = self.getText() or tags
 		self.addPhotos(self.flickr.photos_search,mode,url=tags,page=page,tags=tags,user_id=userid)
 		
 	def INTERESTING(self,page):
@@ -784,6 +830,8 @@ def doPlugin():
 			fsession.INTERESTING(page)
 		elif mode==12:
 			fsession.GROUPS()
+		elif mode==13:
+			fsession.SEARCH_GROUPS(url,page)
 		elif mode==103:
 			fsession.SET(url,page)
 		elif mode==104:
