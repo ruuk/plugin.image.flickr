@@ -182,6 +182,7 @@ class FlickrSession:
 		self.maps = None
 		self.justAuthorized = False
 		self.isSlideshow = False
+		self._isMobile = None
 		if __settings__.getSetting('enable_maps') == 'true': self.maps = Maps()
 		
 	def authenticated(self): return self._authenticated
@@ -196,9 +197,11 @@ class FlickrSession:
 	
 	def getDisplayValue(self,index):
 		return self.DISPLAY_VALUES[int(index)]
-		
+
 	def isMobile(self,set=None):
-		if set == None: return __settings__.getSetting('mobile') == 'true'
+		if set == None:
+			if self._isMobile != None: return self._isMobile  
+			return __settings__.getSetting('mobile') == 'true'
 		if set:
 			__settings__.setSetting('mobile','true')
 			self.flickr.api_key = self.MOBILE_API_KEY
@@ -207,6 +210,7 @@ class FlickrSession:
 			__settings__.setSetting('mobile','false')
 			self.flickr.api_key = self.API_KEY
 			self.flickr.secret = self.API_SECRET
+		self._isMobile = set
 	
 	def getKeys(self):
 		if self.isMobile():
@@ -215,25 +219,27 @@ class FlickrSession:
 			return self.API_KEY,self.API_SECRET
 		
 	def doTokenDialog(self,frob,perms):
-		try:
-			from webviewer import webviewer #@UnresolvedImport @UnusedImport
-			yes = xbmcgui.Dialog().yesno('Authenticate','Press \'Yes\' to authenticate in any browser','Press \'No\' to use Web Viewer (If Installed)')
-			if not yes:
-				self.isMobile(False)
-				self.doNormalTokenDialog(frob, perms)
+		if False:
+			try:
+				from webviewer import webviewer #@UnresolvedImport @UnusedImport
+				yes = xbmcgui.Dialog().yesno('Authenticate','Press \'Yes\' to authenticate in any browser','Press \'No\' to use Web Viewer (If Installed)')
+				if not yes:
+					self.isMobile(False)
+					self.doNormalTokenDialog(frob, perms)
+					return
+			except ImportError:
+				LOG("Web Viewer Not Installed - Using Mobile Method")
+				pass
+			except:
+				ERROR('')
 				return
-		except ImportError:
-			LOG("Web Viewer Not Installed - Using Mobile Method")
-			pass
-		except:
-			return
 			
 		self.isMobile(True)
 		self.doMiniTokenDialog(frob, perms)
 		
 	def doNormalTokenDialog(self,frob,perms):
 		url = self.flickr.auth_url('read',frob)
-		xbmcplugin.endOfDirectory(int(sys.argv[1]),succeeded=False)
+		if PLUGIN: xbmcplugin.endOfDirectory(int(sys.argv[1]),succeeded=False)
 		self.justAuthorized = True
 		xbmcgui.Dialog().ok(__language__(30507),__language__(30508),__language__(30509))
 		from webviewer import webviewer #@UnresolvedImport
@@ -963,7 +969,8 @@ def registerAsShareTarget():
 	target.provideTypes = ['feed']
 	ShareSocial.registerShareTarget(target)
 	LOG('Registered as share target with ShareSocial')
-		
+
+PLUGIN = False
 if __name__ == '__main__':
 	#print sys.argv
 	if sys.argv[1] == 'map':
@@ -982,4 +989,5 @@ if __name__ == '__main__':
 	elif len(sys.argv) > 2 and sys.argv[2].startswith('?video_id'):
 		playVideo()
 	else:
+		PLUGIN = True
 		doPlugin()
