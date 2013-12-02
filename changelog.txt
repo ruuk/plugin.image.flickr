@@ -6,6 +6,7 @@ Current Version : 1.0.0
 
 Fix some authentication issues and remove WebViewer option (now has unreadable captchas)
 Update addon.xml for Gotham
+Converted strings.xml files to strings.po files
 
 ** 0.9.104 ***
 
