@@ -314,14 +314,18 @@ class FlickrSession:
 	def finishAuthenticate(self,token):
 		self.flickr.token_cache.token = token
 		if self.username:
-			user = self.flickr.people_findByUsername(username=self.username)
-			self.user_id = user.findall('*')[0].get('id')
-		else:
-			rsp = self.flickr.auth_checkToken(auth_token=token,format='xmlnode')
-			user = rsp.auth[0].user[0]
-			self.user_id = user.attrib.get('nsid')
-			self.username = user.attrib.get('username')
-			if self.username: __settings__.setSetting('flickr_username',self.username)
+			try:
+				user = self.flickr.people_findByUsername(username=self.username)
+				self.user_id = user.findall('*')[0].get('id')
+				return True
+			except:
+				ERROR('Failed to authenticate with username in settings')
+			
+		rsp = self.flickr.auth_checkToken(auth_token=token,format='xmlnode')
+		user = rsp.auth[0].user[0]
+		self.user_id = user.attrib.get('nsid')
+		self.username = user.attrib.get('username')
+		if self.username: __settings__.setSetting('flickr_username',self.username)
 		return True
 			
 	def getCollectionsInfoList(self,userid=None,cid='0'):
@@ -511,7 +515,7 @@ class FlickrSession:
 		sizes = {}
 		if ptype == 'video':
 			sizes = self.getImageUrl(pid,'all')
-			display = sizes.get('Site MP4',photo.get('Video Original',''))
+			display = selectVideoURL(sizes)
 			#display = 'plugin://plugin.image.flickr/?play_video&' + pid
 		contextMenu = []
 		if mapOption:
@@ -892,6 +896,16 @@ def doPlugin():
 		
 	if mode != 9999: xbmcplugin.endOfDirectory(int(sys.argv[1]),succeeded=success,updateListing=update_dir,cacheToDisc=cache)
 
+def selectVideoURL(sizes):
+	sizeIDX = int(__settings__.getSetting('video_display_size') or '1')
+	sizeNames = ('Mobile MP4','Site MP4','HD MP4','Video Original')
+	size = sizeNames[sizeIDX]
+	if size in sizes: return sizes[size]
+	for size in sizeNames[:sizeIDX]:
+		if size in sizes: return sizes[size]
+	return ''
+		
+	
 def playVideo():
 		fsession = FlickrSession()
 		if not fsession.authenticate():
@@ -899,7 +913,7 @@ def playVideo():
 		vid = sys.argv[2].split('=')[-1]
 		LOG('Playing video with ID: ' + vid)
 		sizes = fsession.getImageUrl(vid, 'all')
-		url = sizes.get('Site MP4',sizes.get('Video Original',''))
+		url = selectVideoURL(sizes)
 		listitem = xbmcgui.ListItem(label='flickr Video', path=url)
 		listitem.setInfo(type='Video',infoLabels={"Title": 'flickr Video'})
 		xbmcplugin.setResolvedUrl(handle=int(sys.argv[1]), succeeded=True, listitem=listitem)
