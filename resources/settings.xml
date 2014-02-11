@@ -3,7 +3,7 @@
 
   <!-- General -->
   <category label="30200">
-    <setting id="flickr_username" type="text" label="30001" default="" />
+    <setting id="flickr_username" type="text" label="30001" default="" enable="eq(1,false)"/>
     <setting id="authenticate" type="bool" label="30013" default="false" />
     <setting label="30014" type="action" action="RunScript(plugin.image.flickr,reset_auth)" option="close" enable="eq(-1,true)"/>
     <setting type="sep" />

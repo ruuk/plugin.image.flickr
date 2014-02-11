@@ -219,20 +219,20 @@ class FlickrSession:
 			return self.API_KEY,self.API_SECRET
 		
 	def doTokenDialog(self,frob,perms):
-		if False:
-			try:
-				from webviewer import webviewer #@UnresolvedImport @UnusedImport
-				yes = xbmcgui.Dialog().yesno('Authenticate','Press \'Yes\' to authenticate in any browser','Press \'No\' to use Web Viewer (If Installed)')
-				if not yes:
-					self.isMobile(False)
-					self.doNormalTokenDialog(frob, perms)
-					return
-			except ImportError:
-				LOG("Web Viewer Not Installed - Using Mobile Method")
-				pass
-			except:
-				ERROR('')
-				return
+#		if False:
+#			try:
+#				from webviewer import webviewer #@UnresolvedImport @UnusedImport
+#				yes = xbmcgui.Dialog().yesno('Authenticate','Press \'Yes\' to authenticate in any browser','Press \'No\' to use Web Viewer (If Installed)')
+#				if not yes:
+#					self.isMobile(False)
+#					self.doNormalTokenDialog(frob, perms)
+#					return
+#			except ImportError:
+#				LOG("Web Viewer Not Installed - Using Mobile Method")
+#				pass
+#			except:
+#				ERROR('')
+#				return
 			
 		self.isMobile(True)
 		self.doMiniTokenDialog(frob, perms)
@@ -274,7 +274,7 @@ class FlickrSession:
 			if not keyboard.isConfirmed(): return
 			mini_token = keyboard.getText().replace('-','')
 			if not mini_token: return
-		token = self.flickr.get_full_token(mini_token) #@UnusedVariable
+		self.flickr.get_full_token(mini_token) #@UnusedVariable
 		
 	def authenticate(self,force=False):
 		key,secret = self.getKeys()
@@ -313,13 +313,13 @@ class FlickrSession:
 		
 	def finishAuthenticate(self,token):
 		self.flickr.token_cache.token = token
-		if self.username:
-			try:
-				user = self.flickr.people_findByUsername(username=self.username)
-				self.user_id = user.findall('*')[0].get('id')
-				return True
-			except:
-				ERROR('Failed to authenticate with username in settings')
+#		if self.username:
+#			try:
+#				user = self.flickr.people_findByUsername(username=self.username)
+#				self.user_id = user.findall('*')[0].get('id')
+#				return True
+#			except:
+#				ERROR('Failed to authenticate with username in settings')
 			
 		rsp = self.flickr.auth_checkToken(auth_token=token,format='xmlnode')
 		user = rsp.auth[0].user[0]
@@ -445,7 +445,7 @@ class FlickrSession:
 	def addPhotos(self,method,mode,url='BLANK',page='1',mapOption=True,with_username=False,**kwargs):
 		global ShareSocial
 		try:
-			import ShareSocial #@UnresolvedImport
+			import ShareSocial #analysis:ignore
 		except:
 			pass
 		
