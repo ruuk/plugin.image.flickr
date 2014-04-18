@@ -39,7 +39,59 @@ def ERROR(message,caption=''):
 
 if not os.path.exists(CACHE_PATH): os.makedirs(CACHE_PATH)
 
+class NetworkTokenCache(flickrapi.tokencache.TokenCache):
+	def __init__(self, api_key, username=None):
+		print 'TEST'
+		flickrapi.tokencache.TokenCache.__init__(self,api_key, username)
+		self.path = __settings__.getSetting('network_token_path')
+
+	def get_cached_token_path(self,filename=''):
+		if os.path.exists(self.path): return os.path.join(self.path, self.api_key, filename)
+		path = self.path.rstrip('/') + '/' + self.api_key
+		if filename: path += '/' + filename
+		return path
+
+	def get_cached_token_filename(self):
+		if self.username:
+			filename = 'auth-%s.token' % self.username
+		else:
+			filename = 'auth.token'
+
+		return self.get_cached_token_path(filename)
+								
+	def set_cached_token(self, token):
+		self.memory[self.username] = token
+		if not token: return
+		import xbmcvfs
+		path = self.get_cached_token_path()
+		if not xbmcvfs.exists(path):
+			xbmcvfs.mkdirs(path)
+
+		f = xbmcvfs.File(self.get_cached_token_filename(), "w")
+		f.write(str(token))
+		f.close()
+	
+	def get_cached_token(self):
+		if self.username in self.memory: return self.memory[self.username]
+
+		try:
+			import xbmcvfs
+			f = xbmcvfs.File(self.get_cached_token_filename())
+			token = f.read()
+			f.close()
+			return token.strip()
+		except:
+			return None
+			
+	token = property(get_cached_token, set_cached_token, flickrapi.tokencache.TokenCache.forget, "The cached token")
+												
 class flickrPLUS(flickrapi.FlickrAPI):
+	def __init__(self, api_key, secret=None, username=None, token=None, format='etree', store_token=True, cache=False):
+		flickrapi.FlickrAPI.__init__(self, api_key, secret, username, token, format, store_token, cache)
+		if __settings__.getSetting('network_token_path'):
+			flickrapi.TokenCacke = NetworkTokenCache
+			self.token_cache = NetworkTokenCache(api_key, username)
+			
 	def walk_photos_by_page(self, method, **params):
 			rsp = method(**params) 
 

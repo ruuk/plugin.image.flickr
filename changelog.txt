@@ -1,6 +1,10 @@
 flickrXBMC Changelog
 
-Current Version : 1.0.2
+Current Version : 1.0.3
+
+*** 1.0.3 ***
+
+Added setting: Network Token Save Path
 
 *** 1.0.2 ***
 
