@@ -82,12 +82,18 @@ class NetworkTokenCache(flickrapi.tokencache.TokenCache):
 		except:
 			return None
 			
+	@staticmethod
+	def isValid():
+		import xbmcvfs
+		path = __settings__.getSetting('network_token_path')
+		return path and xbmcvfs.exists(path)
+		
 	token = property(get_cached_token, set_cached_token, flickrapi.tokencache.TokenCache.forget, "The cached token")
 												
 class flickrPLUS(flickrapi.FlickrAPI):
 	def __init__(self, api_key, secret=None, username=None, token=None, format='etree', store_token=True, cache=False):
 		flickrapi.FlickrAPI.__init__(self, api_key, secret, username, token, format, store_token, cache)
-		if __settings__.getSetting('network_token_path'):
+		if NetworkTokenCache.isValid():
 			flickrapi.TokenCacke = NetworkTokenCache
 			self.token_cache = NetworkTokenCache(api_key, username)
 			
