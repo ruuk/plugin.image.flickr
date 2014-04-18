@@ -41,7 +41,6 @@ if not os.path.exists(CACHE_PATH): os.makedirs(CACHE_PATH)
 
 class NetworkTokenCache(flickrapi.tokencache.TokenCache):
 	def __init__(self, api_key, username=None):
-		print 'TEST'
 		flickrapi.tokencache.TokenCache.__init__(self,api_key, username)
 		self.path = __settings__.getSetting('network_token_path')
 
