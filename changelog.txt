@@ -1,6 +1,10 @@
 flickrXBMC Changelog
 
-Current Version : 1.0.3
+Current Version : 1.0.4
+
+*** 1.0.4 ***
+
+Network token cache is now backed by the local token cache
 
 *** 1.0.3 ***
 

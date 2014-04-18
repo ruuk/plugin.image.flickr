@@ -43,6 +43,7 @@ class NetworkTokenCache(flickrapi.tokencache.TokenCache):
 	def __init__(self, api_key, username=None):
 		flickrapi.tokencache.TokenCache.__init__(self,api_key, username)
 		self.path = __settings__.getSetting('network_token_path')
+		self.localBackup = flickrapi.tokencache.TokenCache(api_key,username)
 
 	def get_cached_token_path(self,filename=''):
 		if os.path.exists(self.path): return os.path.join(self.path, self.api_key, filename)
@@ -59,6 +60,7 @@ class NetworkTokenCache(flickrapi.tokencache.TokenCache):
 		return self.get_cached_token_path(filename)
 								
 	def set_cached_token(self, token):
+		self.localBackup.set_cached_token(token)
 		self.memory[self.username] = token
 		if not token: return
 		import xbmcvfs
@@ -71,16 +73,29 @@ class NetworkTokenCache(flickrapi.tokencache.TokenCache):
 		f.close()
 	
 	def get_cached_token(self):
+		backup = self.localBackup.get_cached_token()
 		if self.username in self.memory: return self.memory[self.username]
-
-		try:
-			import xbmcvfs
-			f = xbmcvfs.File(self.get_cached_token_filename())
-			token = f.read()
-			f.close()
-			return token.strip()
-		except:
-			return None
+		import xbmcvfs
+		filename = self.get_cached_token_filename()
+		if xbmcvfs.exists(filename):
+			try:
+				f = xbmcvfs.File(filename)
+				token = f.read()
+				f.close()
+				return token.strip()
+			except:
+				pass
+		return backup
+			
+	def forget(self):
+		self.localBackup.forget()
+		if self.username in self.memory:
+			del self.memory[self.username]
+								
+		import xbmcvfs
+		filename = self.get_cached_token_filename()
+		if xbmcvfs.exists(filename):
+			xbmcvfs.delete(filename)
 			
 	@staticmethod
 	def isValid():
@@ -88,13 +103,12 @@ class NetworkTokenCache(flickrapi.tokencache.TokenCache):
 		path = __settings__.getSetting('network_token_path')
 		return path and xbmcvfs.exists(path)
 		
-	token = property(get_cached_token, set_cached_token, flickrapi.tokencache.TokenCache.forget, "The cached token")
+	token = property(get_cached_token, set_cached_token, forget, "The cached token")
 												
 class flickrPLUS(flickrapi.FlickrAPI):
 	def __init__(self, api_key, secret=None, username=None, token=None, format='etree', store_token=True, cache=False):
 		flickrapi.FlickrAPI.__init__(self, api_key, secret, username, token, format, store_token, cache)
 		if NetworkTokenCache.isValid():
-			flickrapi.TokenCacke = NetworkTokenCache
 			self.token_cache = NetworkTokenCache(api_key, username)
 			
 	def walk_photos_by_page(self, method, **params):
