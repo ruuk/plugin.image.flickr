@@ -1,6 +1,10 @@
 flickrXBMC Changelog
 
-Current Version : 1.0.4
+Current Version : 1.0.5
+
+*** 1.0.5 ***
+
+Fixed 403 forbidden errors due to new SSL requirement
 
 *** 1.0.4 ***
 
