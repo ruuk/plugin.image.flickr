@@ -533,18 +533,19 @@ class FlickrSession:
 		if mapOption: extras += ',geo'
 		
 		#Walk photos
-		ct=1
+		ct=0
 		mpp = self.max_per_page
 		if self.isSlideshow: mpp = 500
 		for photo in self.flickr.walk_photos_by_page(method,page=page,per_page=mpp,extras=extras,**kwargs):
-			ct+=1
 			ok = self.addPhoto(photo, mapOption=mapOption,with_username=with_username)
 			if not ok: break
+			ct+=1
 			
 		#Add Next Footer if necessary
-		#print "PAGES: " + str(page) + " " + str(self.flickr.TOTAL_PAGES) + " " + self.flickr.TOTAL_ON_LAST_PAGE
-		if ct >= self.max_per_page:
-			nextp = '('+str(page*self.max_per_page)+'/'+str(self.flickr.TOTAL)+') '
+		#print "PAGES: " + str(page) + " " + str(self.flickr.TOTAL_PAGES) + " " + str(self.flickr.TOTAL_ON_LAST_PAGE)
+		if ct >= self.max_per_page or page < self.flickr.TOTAL_PAGES:
+			sofar = (max(0,page - 1) * self.max_per_page) + ct
+			nextp = '({0}/{1}) '.format(sofar,self.flickr.TOTAL)
 			replace = ''
 			if page + 1 == self.flickr.TOTAL_PAGES:
 				nextp += __language__(30513)
