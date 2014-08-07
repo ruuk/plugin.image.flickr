@@ -14,16 +14,16 @@ Installation of the repository should be done through Kodi System::Settings::Add
 Support is available at: http://forum.xbmc.org/showthread.php?tid=81593
 
 Currently implemented flickr features:
-*Photostream
-*Collections
-*Sets
-*Galleries
-*Tags
-*Places
-*Favorites
-*Contacts
-*Groups
-*Search Photostream
-*Search flickr
-*Search flickr Groups
-*Interesting Today
+  * Photostream
+  * Collections
+  * Sets
+  * Galleries
+  * Tags
+  * Places
+  * Favorites
+  * Contacts
+  * Groups
+  * Search Photostream
+  * Search flickr
+  * Search flickr Groups
+  * Interesting Today
