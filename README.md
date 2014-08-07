@@ -2,8 +2,8 @@ plugin.image.flickr
 ===================
 
 Flickr addon for Kodi (XBMC)
-
-This addon provides access to both private and public photos and videos on flickr.
+----------------------------
+This addon provides access to both private and public photos and videos on flickr. Access to private photos requires authorizing the addon.
 
 Installation should be done through Kodi System::Settings::Add-ons::Get Add-Ons::All Add-Ons::Picture Add-Ons::flickr
 
