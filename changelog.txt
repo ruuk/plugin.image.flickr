@@ -2,6 +2,10 @@ flickrXBMC Changelog
 
 *** 1.0.7 ***
 
+Change site url for authentication
+
+*** 1.0.7 ***
+
 For for encoding issues causing errors
 
 *** 1.0.6 ***

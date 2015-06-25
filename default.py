@@ -335,7 +335,7 @@ class FlickrSession:
 		return token
 
 	def doMiniTokenDialog(self,frob,perms):
-		xbmcgui.Dialog().ok("AUTHENTICATE",'Go to http://xbmc.2ndmind.com/auth','get the code and click OK to continue')
+		xbmcgui.Dialog().ok("AUTHENTICATE",'Go to flickr.2ndmind.com','get the code and click OK to continue')
 		mini_token = ''
 		message = 'Enter 9 digit code'
 		while not len(mini_token) == 9 or not mini_token.isdigit():
