@@ -285,7 +285,7 @@ class FlickrSession:
 
         token = self.flickr.token_cache.token
 
-        if not token:
+        if not token or not token[0]:
             import OAuthHelper
 
             token = OAuthHelper.getToken('plugin.image.flickr')

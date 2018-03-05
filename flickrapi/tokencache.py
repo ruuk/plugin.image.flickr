@@ -71,9 +71,9 @@ class TokenCache(object):
 
             return token.strip(), secret.strip()
         except IOError:
-            return None
+            return [None, None]
         except:
-            return None
+            return [None, None]
 
     def set_cached_token(self, token_secret):
         assert isinstance(token_secret, list)
@@ -87,7 +87,10 @@ class TokenCache(object):
             os.makedirs(path)
 
         f = open(self.get_cached_token_filename(), "w")
-        f.write('{0}\n{1}'.format(token_secret[0], token_secret[1]))
+        if token_secret[0] and token_secret[1]:
+            f.write('{0}\n{1}'.format(token_secret[0], token_secret[1]))
+        else:
+            f.write('')
         f.close()
 
     def forget(self):
