@@ -344,3 +344,7 @@ msgstr ""
 msgctxt "#30528"
 msgid "Video Original (Best)"
 msgstr ""
+
+msgctxt "#30529"
+msgid "Enter search text"
+msgstr ""

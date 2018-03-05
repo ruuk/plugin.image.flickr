@@ -39,6 +39,9 @@ def ERROR(message,caption=''):
 
 if not os.path.exists(CACHE_PATH): os.makedirs(CACHE_PATH)
 
+class UserCancelException(Exception):
+    pass
+
 class NetworkTokenCache(flickrapi.tokencache.TokenCache):
     def __init__(self, api_key, username=None):
         flickrapi.tokencache.TokenCache.__init__(self,api_key, username)
@@ -649,7 +652,7 @@ class FlickrSession:
         for g in groups:
             if not self.addDir(g['name'] + ' (%s)' % g['count'],g['id'],112,g['tn'],tot=total): break
 
-    def getText(self,prompt=__language__(30501)):
+    def getText(self,prompt=__language__(30529)):
         keyboard = xbmc.Keyboard('',prompt)
         keyboard.doModal()
         if (keyboard.isConfirmed()):
@@ -684,9 +687,20 @@ class FlickrSession:
             if page < self.flickr.TOTAL_PAGES: self.addDir(nextp.replace('@REPLACE@',replace)+' ->',tags,13,os.path.join(IMAGES_PATH,'next.png'),page=str(page+1))
 
     def SEARCH_TAGS(self,tags,page,mode=9,userid=None):
+        kwargs = {'page': page, 'user_id': userid}
         if tags == '@@search@@' or tags == userid:
-            tags = self.getText() or tags
-        self.addPhotos(self.flickr.photos_search,mode,url=tags,page=page,tags=tags,user_id=userid)
+            textSearch = xbmcgui.Dialog().yesno("Search Type", line1="Would you like to search tags or do a free text search?", yeslabel="Text", nolabel="Tags")
+            tags = self.getText(prompt=__language__(textSearch and 30529 or 30501))
+            if not tags:
+                raise UserCancelException
+            kwargs[textSearch and 'text' or 'tags'] = tags
+            kwargs['url'] = (textSearch and 'text' or 'tags') + ':' + tags
+        elif tags:
+            xbmc.log(tags, xbmc.LOGNOTICE)
+            kwargs['url'] = tags
+            search, tags = tags.split(":", 1)
+            kwargs[search] = tags
+        self.addPhotos(self.flickr.photos_search, mode, **kwargs)
 
     def INTERESTING(self,page):
         self.addPhotos(self.flickr.interestingness_getList,11,page=page)
@@ -876,6 +890,8 @@ def doPlugin():
             success = False
         else:
             ERROR('UNHANDLED URL ERROR',' (URL)')
+    except UserCancelException:
+        success = False
     except:
         ERROR('UNHANDLED ERROR')
 
