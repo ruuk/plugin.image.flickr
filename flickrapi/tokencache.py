@@ -87,7 +87,7 @@ class TokenCache(object):
             os.makedirs(path)
 
         f = open(self.get_cached_token_filename(), "w")
-        if token_secret[0] and token_secret[1]:
+        if token_secret and len(token_secret) > 1 and token_secret[0] and token_secret[1]:
             f.write('{0}\n{1}'.format(token_secret[0], token_secret[1]))
         else:
             f.write('')

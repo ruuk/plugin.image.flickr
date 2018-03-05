@@ -275,6 +275,9 @@ class FlickrSession:
     def getDisplayValue(self,index):
         return self.DISPLAY_VALUES[int(index)]
 
+    def tokenIsValid(self, token):
+        return token and len(token) > 1 and token[0] and token[1]
+
     def authenticate(self,force=False):
         self.flickr = flickrPLUS(self.API_KEY, self.API_SECRET)
 
@@ -285,7 +288,7 @@ class FlickrSession:
 
         token = self.flickr.token_cache.token
 
-        if not token or not token[0]:
+        if not self.tokenIsValid(token):
             import OAuthHelper
 
             token = OAuthHelper.getToken('plugin.image.flickr')
@@ -293,6 +296,9 @@ class FlickrSession:
                 return False
 
             token = token.split('@', 1)
+
+            if not self.tokenIsValid(token):
+                return False
 
         result = self.finishAuthenticate(token)
 
@@ -696,7 +702,6 @@ class FlickrSession:
             kwargs[textSearch and 'text' or 'tags'] = tags
             kwargs['url'] = (textSearch and 'text' or 'tags') + ':' + tags
         elif tags:
-            xbmc.log(tags, xbmc.LOGNOTICE)
             kwargs['url'] = tags
             search, tags = tags.split(":", 1)
             kwargs[search] = tags
@@ -802,6 +807,7 @@ def doPlugin():
         fsession = FlickrSession()
         fsession.isSlideshow = params.get('plugin_slideshow_ss','false') == 'true'
         if not fsession.authenticate():
+            success = False
             mode = 9999
             url = 'AUTHENTICATE'
 
